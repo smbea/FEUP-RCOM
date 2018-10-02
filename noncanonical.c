@@ -71,21 +71,21 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-
- 	res = 0;
+	char message[255];
+	int i = 0;
     while (STOP==FALSE) {       /* loop for input */
-		printf("Res start\n");
-		ssize_t count = read(fd,buf+res,1);
-		if(count > 0) {
-			if(buf[res++] == '\0')
-				STOP=TRUE;
-		} 
+		res = read(fd,buf,1);
+		buf[res] = 0;
+		message[i] = buf[0];
+		i++;
+		if(buf[0] == '\0')
+			STOP=TRUE;
     }
 	
-	printf(":%s:%d\n", buf, res);
+	printf("Recieved:%s\n", message);
 
-	res = write(fd,buf,res);
-    printf("%d bytes written\n", res);
+	res = write(fd,message,strlen(message)+1);
+    	printf("%d bytes written\n", strlen(message) + 1);
 
 
 
