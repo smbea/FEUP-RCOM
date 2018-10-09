@@ -1,6 +1,7 @@
 #ifndef STATE_MACHINE_H
 #define STATE_MACHINE_H
 typedef unsigned char byte;
+#define FLAG 0x7E
 
 // Enumerator with all possible machine states
 typedef enum st {
