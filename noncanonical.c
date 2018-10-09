@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "stateMachine.h"
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -73,16 +74,27 @@ int main(int argc, char** argv)
     printf("New termios structure set\n");
 	char message[255];
 	int i = 0;
+	stateMachine st;
+	st.currentState = START;
+	st.currentStateFunc = &stateStart;
+	unsigned char teste;
     while (STOP==FALSE) {       /* loop for input */
-		res = read(fd,buf,1);
-		buf[res] = 0;
-		message[i] = buf[0];
-		i++;
-		if(buf[0] == '\0')
-			STOP=TRUE;
+		res = read(fd,&teste,1);
+		//buf[res] = 0;
+		//message[i] = buf[0];
+		//i++;
+		//if(buf[0] == '\0')
+		//	STOP=TRUE;
+		(*st.currentStateFunc)(&st, teste);
     }
+
+	printf("Recieved:\n");
 	
-	printf("Recieved:%s\n", message);
+	int  j;	
+	for(j = 0; j < i; j++)
+	{
+		printf("%d:%x\n", j, message[j]);
+	}
 
 	res = write(fd,message,strlen(message)+1);
     	printf("%d bytes written\n", strlen(message) + 1);
@@ -96,4 +108,3 @@ int main(int argc, char** argv)
     close(fd);
     return 0;
 }
-
