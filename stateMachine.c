@@ -1,7 +1,7 @@
 //State Machine SET
 //WIP
 #include "stateMachine.h"
-#define FLAG 0x7E
+
 
 struct tram{
 	int firstFlag;
@@ -87,6 +87,11 @@ int stateProtection(stateMachine *st, byte input) {
 		printf("Transitioned to bcc_rcv state\n");
 		st->currentState = BCC_RCV;
 		st->currentStateFunc = stateBCC;
+	}
+	else if (input == (SENT_BY_RECEPTOR^UA)) {
+		printf("Transitioned to bcc_rcv state\n");
+		st->currentState = BCC_RCV;
+		st->currentStateFunc = stateBCC;
 	} else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
@@ -98,8 +103,9 @@ int stateBCC(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == FLAG) {
-		printf("end\n");
+		st->currentState = END;
 	} else {
-		printf("TODO\n");
+		st->currentState = START;
+		st->currentStateFunc = stateStart;
 	}
 }
