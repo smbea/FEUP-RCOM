@@ -26,6 +26,11 @@ volatile int STOP=FALSE;
 stateMachine st;
 int flag=1, conta=1;
 
+enum port{
+  COM1 = 0,
+  COM2 = 1
+};
+
 void atende(){
 	printf("alarme # %d\n", conta);
 	flag=1;
@@ -34,7 +39,6 @@ void atende(){
 
 
 void writemessage(int fd){
-  unsigned char teste;
   int res;
     
     unsigned char buf[6];
@@ -93,30 +97,17 @@ void communicateWithReceptor(int fd){
   printf("Vou terminar.\n");
 }
 
-int main(int argc, char** argv)
-{
-printf("sup");
-    int fd,c, res;
+int llopen(int port, int f){
+   int fd;
     struct termios oldtio,newtio;
-    int i, sum = 0, speed = 0;
+    char * portName;
 
-    if ( (argc < 2) ||
-         ((strcmp("/dev/ttyS0", argv[1])!=0) &&
-          (strcmp("/dev/ttyS1", argv[1])!=0) )) {
-      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-      exit(1);
-    }
+    if(port) portName = "/dev/ttyS1";
+    else portName = "/dev/ttyS0";
 
-
-
-  /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-  */
-
-
-    fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(argv[1]); exit(-1); }
+  //f 1 if trnasmitter, 0 if receiver
+   fd = open(portName, O_RDWR | O_NOCTTY );
+    if (fd <0) return -1;
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
@@ -135,54 +126,59 @@ printf("sup");
     newtio.c_cc[VMIN]     = 1;
 
 
-
   /*
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) pr�ximo(s) caracter(es)
   */
 
 
-
     tcflush(fd, TCIOFLUSH);
 
 
     if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
-      perror("tcsetattr");
+      perror("input");
       exit(-1);
     }
 
     printf("New termios structure set\n");
+    return fd;
+
+}
+
+int main(int argc, char** argv)
+{
+printf("sup");
+    int fd,c, res;
+    struct termios oldtio,newtio;
+    int i, sum = 0, speed = 0;
+    int port;
+
+    if ( (argc < 2) ||
+         ((strcmp("/dev/ttyS0", argv[1])!=0) &&
+          (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+      exit(1);
+    }else if(strcmp("/dev/ttyS0", argv[1])!=0) port = COM1;
+    else if(strcmp("/dev/ttyS1", argv[1])!=0) port = COM2;
+
+
+
+  /*
+    Open serial port device for reading and writing and not as controlling tty
+    because we don't want to get killed if linenoise sends CTRL-C.
+  */
+
+    fd = llopen(port,1);
+   
     communicateWithReceptor(fd);
 
     fflush(NULL);
-
-/*
-    for (i = 0; i < 255; i++) {
-      buf[i] = 'a';
-    }
-
-    */
-    /*testing
-    buf[25] = '\n';
-
-    res = write(fd,buf,255);
-    printf("%d bytes written\n", res);
- */
-
-  /*
-    O ciclo FOR e as instru��es seguintes devem ser alterados de modo a respeitar
-    o indicado no gui�o
-  */
-
-
 
 
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");
       exit(-1);
     }
-
-
 
 
     close(fd);
