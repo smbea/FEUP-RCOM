@@ -1,13 +1,15 @@
 //State Machine SET
 //WIP
 #include "stateMachine.h"
+#include <stdio.h>
+#include <unistd.h>
 
+int initStateMachine(stateMachine *st) {
+	st->currentState = START;
+	st->currentStateFunc = &stateStart;
 
-struct tram{
-	int firstFlag;
-	int messageType;
-	char header;
-};
+	return 0;
+}
 
 /**
  * Processes the input when the machine is in the Start state
@@ -22,12 +24,11 @@ int stateStart(stateMachine *st, byte input) {
 		// transitate the state to FLAG_RCV and update function
 		st->currentState = FLAG_RCV;
 		st->currentStateFunc = &stateFlag;
-		return 0;
 	} else {
 		// stays on Start state
 		printf("Staying in start state\n");
-		return 0;
 	}
+	return 0;
 }
 
 int stateFlag(stateMachine *st, byte input) {
@@ -35,20 +36,19 @@ int stateFlag(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == FLAG) {
-		// stays on the Flag state
-		return 0;
+		printf("Staying in FLAG state");
 	} else if(input == SENT_BY_EMISSOR || input == SENT_BY_RECEPTOR) {
 		printf("Transitioned to a_rcv state\n");
 		st->currentState = A_RCV;
 		st->currentStateFunc = &stateAddress;
-		return 0;
 	} else {
 		// unknown input, transitate to Start state
 		printf("Unknown input, back to start\n");
 		st->currentState = START;
 		st->currentStateFunc = &stateStart;
-		return 0;
 	}
+
+	return 0;
 }
 
 int stateAddress(stateMachine *st, byte input) {
@@ -60,19 +60,19 @@ int stateAddress(stateMachine *st, byte input) {
 		printf("Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
-		return 0;
 	} else if(input == FLAG) {
 		// go back to flag state
 		printf("Got FLAG, back to flag state state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
-		return 0;
 	} else {
 		// unknown input
 		printf("Unknown input, back to start\n");
 		st->currentState = START;
 		st->currentStateFunc = &stateStart;
 	}
+
+	return 0;
 }
 
 int stateProtection(stateMachine *st, byte input) {
@@ -96,6 +96,8 @@ int stateProtection(stateMachine *st, byte input) {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
 	}
+
+	return 0;
 }
 
 int stateBCC(stateMachine *st, byte input) {
@@ -108,4 +110,27 @@ int stateBCC(stateMachine *st, byte input) {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
 	}
+
+	return 0;
+}
+
+/**
+ * The code below isn't in any way related with state machine, are just functions 
+ * 
+ */
+int send_SET(int fd) {
+	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
+	write(fd, buf, 5);
+	printf("sent SET packet\n");
+
+	return 0;
+}
+
+int send_UA(int fd) {
+	// TODO
+	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
+	write(fd, buf, 5);
+	printf("sent UA packet\n");
+
+	return 0;
 }

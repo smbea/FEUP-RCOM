@@ -29,6 +29,14 @@ typedef struct stateMachine {
 	int (*currentStateFunc)(void*, byte);
 } stateMachine;
 
+/**
+ * @brief Initializes the state machine
+ * 
+ * @param st The state machine to be intialized
+ * @return int 
+ */
+int initStateMachine(stateMachine *st);
+
 int stateStart(stateMachine *st, byte input);
 int stateFlag(stateMachine *st, byte input);
 int stateAddress(stateMachine *st, byte input);
