@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 #include "stateMachine.h"
 
 #define BAUDRATE B38400
@@ -16,12 +17,75 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG 0x7e
 #define A 0x03
 #define C 0x03
 #define BCC A ^ C
 
 volatile int STOP=FALSE;
+
+stateMachine st;
+int flag=1, conta=1;
+
+void atende()                   // atende alarme
+{
+	printf("alarme # %d\n", conta);
+	flag=1;
+	conta++;
+}
+
+
+void writemessage(int fd){
+  unsigned char teste;
+  int res;
+
+    stateMachine st;
+    st.currentState = START;
+    st.currentStateFunc = &stateStart;
+    
+    unsigned char buf[6];
+    buf[0] = FLAG;
+    buf[1] = A;
+    buf[2] = C;
+    buf[3] = BCC;
+    buf[4] = FLAG;
+    buf[5] = 0;
+
+    printf("%s\n", buf);
+
+    res = write(fd,buf,sizeof(buf));
+    printf("%d bytes written\n", res);
+}
+
+void communicateWithReceptor(int fd){
+  int res;
+  unsigned char teste;
+  (void) signal(SIGALRM, atende);  // mudar para sigaction
+
+  while(conta < 4){
+    if(flag){
+
+        writemessage(fd);
+
+        alarm(3);                 // activa alarme de 3s
+        flag=0;
+    }
+
+    while(1){
+      res = read(fd,&teste,1);
+        printf("%x\n", teste);
+        //buf[res] = 0;
+        //message[i] = teste;
+        //i++;
+        //if(buf[0] == '\0')
+        //    STOP=TRUE;
+        (*st.currentStateFunc)(&st, teste);
+        if(st.currentState == END || flag) break;
+    }
+
+     if(st.currentState == END) return;
+  }
+  printf("Vou terminar.\n");
+}
 
 int main(int argc, char** argv)
 {
@@ -74,45 +138,21 @@ int main(int argc, char** argv)
 
     tcflush(fd, TCIOFLUSH);
 
+
     if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
       perror("tcsetattr");
       exit(-1);
     }
-    unsigned char teste;
-    stateMachine st;
-    st.currentState = START;
-    st.currentStateFunc = &stateStart;
+
     printf("New termios structure set\n");
 
-    unsigned char buf[6];
-    buf[0] = FLAG;
-    buf[1] = A;
-    buf[2] = C;
-    buf[3] = BCC;
-    buf[4] = FLAG;
-    buf[5] = 0;
+    st.currentState = START;
+    st.currentStateFunc = &stateStart;
 
-    printf("%s\n", buf);
-
-    res = write(fd,buf,sizeof(buf));
-    printf("%d bytes written\n", res);
-
-    char message[255];
-    i = 0;
-
-    while (st.currentState != END) {       /* loop for input */
-        res = read(fd,&teste,1);
-        printf("%x\n", teste);
-        //buf[res] = 0;
-        message[i] = teste;
-        i++;
-        //if(buf[0] == '\0')
-        //    STOP=TRUE;
-        (*st.currentStateFunc)(&st, teste);
-    }
+    communicateWithReceptor(fd);
 
     printf("received UA:\n");
-    printf("%x %x %x %x %x\n",message[0],message[1],message[2],message[3],message[4]);
+    //printf("%x %x %x %x %x\n",message[0],message[1],message[2],message[3],message[4]);
 
     fflush(NULL);
 

@@ -96,8 +96,11 @@ int main(int argc, char** argv)
 		printf("%d:%x\n", j, message[j]);
 	}
 
-	res = write(fd,message,strlen(message)+1);
-    	printf("%d bytes written\n", strlen(message) + 1);
+    message[0] = SENT_BY_RECEPTOR;
+    message[1] = UA;
+
+	  res = write(fd,message,strlen(message)+1);
+    printf("%d bytes written\n", strlen(message) + 1);
 
 
 
