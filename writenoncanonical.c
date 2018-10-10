@@ -152,10 +152,7 @@ printf("sup");
     }
 
     printf("New termios structure set\n");
-    //communicateWithReceptor(fd);
-
-    printf("received UA:\n");
-    //printf("%x %x %x %x %x\n",message[0],message[1],message[2],message[3],message[4]);
+    communicateWithReceptor(fd);
 
     fflush(NULL);
 
