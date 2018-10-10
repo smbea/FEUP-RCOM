@@ -26,8 +26,7 @@ volatile int STOP=FALSE;
 stateMachine st;
 int flag=1, conta=1;
 
-void atende()                   // atende alarme
-{
+void atende(){
 	printf("alarme # %d\n", conta);
 	flag=1;
 	conta++;
@@ -37,10 +36,6 @@ void atende()                   // atende alarme
 void writemessage(int fd){
   unsigned char teste;
   int res;
-
-    stateMachine st;
-    st.currentState = START;
-    st.currentStateFunc = &stateStart;
     
     unsigned char buf[6];
     buf[0] = FLAG;
@@ -56,22 +51,33 @@ void writemessage(int fd){
     printf("%d bytes written\n", res);
 }
 
+
 void communicateWithReceptor(int fd){
   int res;
   unsigned char teste;
-  (void) signal(SIGALRM, atende);  // mudar para sigaction
+
+   stateMachine st;
+   st.currentState = START;
+   st.currentStateFunc = &stateStart;
+
+   struct sigaction act;
+	act.sa_handler = atende;
+
+  sigaction(SIGALRM, &act,NULL);  
 
   while(conta < 4){
     if(flag){
 
+	printf("writing message\n");
         writemessage(fd);
 
         alarm(3);                 // activa alarme de 3s
+	printf("sent alarm\n");
         flag=0;
     }
 
     while(1){
-      res = read(fd,&teste,1);
+      	res = read(fd,&teste,1);
         printf("%x\n", teste);
         //buf[res] = 0;
         //message[i] = teste;
@@ -89,6 +95,7 @@ void communicateWithReceptor(int fd){
 
 int main(int argc, char** argv)
 {
+printf("sup");
     int fd,c, res;
     struct termios oldtio,newtio;
     int i, sum = 0, speed = 0;
@@ -145,11 +152,7 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-
-    st.currentState = START;
-    st.currentStateFunc = &stateStart;
-
-    communicateWithReceptor(fd);
+    //communicateWithReceptor(fd);
 
     printf("received UA:\n");
     //printf("%x %x %x %x %x\n",message[0],message[1],message[2],message[3],message[4]);
