@@ -2,7 +2,7 @@
 
 #include "dataLink.h"
 #include "stateMachine.h"
-
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -44,7 +44,7 @@ void writemessage(int fd){
     buf[4] = FLAG;
     buf[5] = 0;
 
-    printf("%s\n", buf);
+    printf("%x\n", buf);
 
     res = write(fd,buf,sizeof(buf));
     printf("%d bytes written\n", res);

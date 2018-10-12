@@ -6,13 +6,11 @@ stMachine:
 dataLink: 
 	gcc -Wall -Wextra -c dataLink.c	
 
-receiver: stMachine
-	gcc -Wall -Wextra stateMachine.o dataLink.o noncanonical.c -o noncanonical
+receiver: stMachine dataLink
+	gcc -Wall -Wextra stateMachine.o dataLink.o noncanonical.c -o noncanonical.o
 
-emitter: stMachine
-	gcc -Wall -Wextra stateMachine.o dataLink.o writenoncanonical.c -o writenoncanonical
+emitter: stMachine dataLink
+	gcc -Wall -Wextra stateMachine.o dataLink.o writenoncanonical.c -o writenoncanonical.o
 
 clean:
 	rm *.o
-	rm noncanonical
-	rm writenoncanonical
