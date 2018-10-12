@@ -1,5 +1,8 @@
 /*Non-Canonical Input Processing*/
 
+#include "dataLink.h"
+#include "stateMachine.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -8,10 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <signal.h>
-#include "stateMachine.h"
 
-#define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -25,11 +25,6 @@ volatile int STOP=FALSE;
 
 stateMachine st;
 int flag=1, conta=1;
-
-enum port{
-  COM1 = 0,
-  COM2 = 1
-};
 
 void atende(){
 	printf("alarme # %d\n", conta);
@@ -83,11 +78,6 @@ void communicateWithReceptor(int fd){
     while(1){
       	res = read(fd,&teste,1);
         printf("%x\n", teste);
-        //buf[res] = 0;
-        //message[i] = teste;
-        //i++;
-        //if(buf[0] == '\0')
-        //    STOP=TRUE;
         (*st.currentStateFunc)(&st, teste);
         if(st.currentState == END || flag) break;
     }
@@ -97,61 +87,13 @@ void communicateWithReceptor(int fd){
   printf("Vou terminar.\n");
 }
 
-int llopen(int port, int f){
-   int fd;
-    struct termios oldtio,newtio;
-    char * portName;
-
-    if(port) portName = "/dev/ttyS1";
-    else portName = "/dev/ttyS0";
-
-  //f 1 if trnasmitter, 0 if receiver
-   fd = open(portName, O_RDWR | O_NOCTTY );
-    if (fd <0) return -1;
-
-    if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
-      perror("tcgetattr");
-      exit(-1);
-    }
-
-    bzero(&newtio, sizeof(newtio));
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-    newtio.c_iflag = IGNPAR;
-    newtio.c_oflag = 0;
-
-    /* set input mode (non-canonical, no echo,...) */
-    newtio.c_lflag = 0;
-
-    newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 1;
-
-
-  /*
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-    leitura do(s) pr�ximo(s) caracter(es)
-  */
-
-
-    tcflush(fd, TCIOFLUSH);
-
-
-    if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
-      perror("input");
-      exit(-1);
-    }
-
-    printf("New termios structure set\n");
-    return fd;
-
-}
 
 int main(int argc, char** argv)
 {
-printf("sup");
     int fd,c, res;
     struct termios oldtio,newtio;
     int i, sum = 0, speed = 0;
-    int port;
+    int port=0;
 
     if ( (argc < 2) ||
          ((strcmp("/dev/ttyS0", argv[1])!=0) &&

@@ -3,11 +3,14 @@ all: emitter receiver
 stMachine: 
 	gcc -Wall -Wextra -c stateMachine.c
 
+datalink: 
+	gcc -Wall -Wextra -c datalink.c	
+
 receiver: stMachine
-	gcc -Wall -Wextra stateMachine.o noncanonical.c -o noncanonical
+	gcc -Wall -Wextra stateMachine.o datalink.o noncanonical.c -o noncanonical
 
 emitter: stMachine
-	gcc -Wall -Wextra stateMachine.o writenoncanonical.c -o writenoncanonical
+	gcc -Wall -Wextra stateMachine.o datalink.o writenoncanonical.c -o writenoncanonical
 
 clean:
 	rm *.o
