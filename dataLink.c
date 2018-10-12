@@ -15,7 +15,7 @@ int llopen(int port, int f){
     char * portName;
 
     if(port==1) portName = "/dev/ttyS1";
-    else if (port==2 )portName = "/dev/ttyS0";
+    else if (port==0 )portName = "/dev/ttyS0";
     else return -1;
     
   //f 1 if trnasmitter, 0 if receiver

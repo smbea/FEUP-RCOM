@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     because we don't want to get killed if linenoise sends CTRL-C.
   */
 
-    fd = llopen(port,1);
+    fd = llopen(0,1);
    
     communicateWithReceptor(fd);
 
