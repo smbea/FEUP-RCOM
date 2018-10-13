@@ -15,13 +15,11 @@
 #define FALSE 0
 #define TRUE 1
 
-#define RECEIVER_FLAG 0
-
 volatile int STOP = FALSE;
 
 int main(int argc, char **argv) {
 
-	int fd;
+	int fd, c, res;
 	struct termios oldtio, newtio;
 
 	/**
@@ -94,14 +92,21 @@ int main(int argc, char **argv) {
 
 		// add frame to packet
 		packet[i++] = frame;
-		printf("%x\n", packet[i++]);
 	}
 
 	// just for debug
 	printf("Recieved\n");
 
+	// display the received packet in hexadecimal
+	unsigned char j;
+	for (j = 0; j < i; j++) {
+		printf("frame %d:%x\n", j, packet[j]);
+	}
+
 	// acknowledge the received SET packet and send back UA
 	send_UA(fd);
+
+	printf("sent UA packet\n");
 
 	/*
 		O ciclo WHILE deve ser alterado de modo a respeitar o indicado no gui�o
