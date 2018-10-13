@@ -42,4 +42,7 @@ int stateFlag(stateMachine *st, byte input);
 int stateAddress(stateMachine *st, byte input);
 int stateProtection(stateMachine *st, byte input);
 int stateBCC(stateMachine *st, byte input);
+int send_SET(int fd);
+int send_UA(int fd);
+
 #endif
