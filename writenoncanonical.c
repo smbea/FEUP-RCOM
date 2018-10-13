@@ -1,7 +1,6 @@
 /*Non-Canonical Input Processing*/
 
 #include "dataLink.h"
-#include "stateMachine.h"
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,7 +11,6 @@
 #include <unistd.h>
 #include <string.h>
 
-#define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -21,7 +19,6 @@
 
 volatile int STOP=FALSE;
 
-stateMachine st;
 int flag=1, conta=1;
 
 void atende(){
