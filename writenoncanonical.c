@@ -12,14 +12,12 @@
 #include <unistd.h>
 #include <string.h>
 
+#define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
-
-#define A 0x03
-#define C 0x03
-#define BCC A ^ C
+#define EMISSOR_FLAG 1
 
 volatile int STOP=FALSE;
 
@@ -34,20 +32,7 @@ void atende(){
 
 
 void writemessage(int fd){
-  int res;
-    
-    unsigned char buf[6];
-    buf[0] = FLAG;
-    buf[1] = A;
-    buf[2] = C;
-    buf[3] = BCC;
-    buf[4] = FLAG;
-    buf[5] = 0;
-
-    printf("%x\n", buf);
-
-    res = write(fd,buf,sizeof(buf));
-    printf("%d bytes written \n", res);
+    send_SET(fd);
 }
 
 
@@ -90,9 +75,8 @@ void communicateWithReceptor(int fd){
 
 int main(int argc, char** argv)
 {
-    int fd,c, res;
-    struct termios oldtio,newtio;
-    int i, sum = 0, speed = 0;
+    int fd;
+    struct termios oldtio;
     int port=0;
 
     if ( (argc < 2) ||
@@ -100,9 +84,8 @@ int main(int argc, char** argv)
           (strcmp("/dev/ttyS1", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
-    }else if(strcmp("/dev/ttyS0", argv[1])!=0) port = COM1;
-    else if(strcmp("/dev/ttyS1", argv[1])!=0) port = COM2;
-
+    }else if(strcmp("/dev/ttyS0", argv[1])==0) port = COM1;
+    else if(strcmp("/dev/ttyS1", argv[1])==0) port = COM2;
 
 
   /*
@@ -110,7 +93,7 @@ int main(int argc, char** argv)
     because we don't want to get killed if linenoise sends CTRL-C.
   */
 
-    fd = llopen(0,1);
+    fd = llopen(port,EMISSOR_FLAG);
    
     communicateWithReceptor(fd);
 

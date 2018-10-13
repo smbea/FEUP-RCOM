@@ -9,17 +9,17 @@
 #include <unistd.h>
 #include <string.h>
 
-int llopen(int port, int f){
-   int fd, i;
+int llopen(int port, int flag){
+    int fd;
     struct termios oldtio,newtio;
     char * portName;
 
-    if(port==1) portName = "/dev/ttyS1";
-    else if (port==0 )portName = "/dev/ttyS0";
+    if(port==2) portName = "/dev/ttyS1";
+    else if (port==1 )portName = "/dev/ttyS0";
     else return -1;
     
-  //f 1 if trnasmitter, 0 if receiver
-   fd = open(portName, O_RDWR | O_NOCTTY );
+    //f 1 if trnasmitter, 0 if receiver
+    fd = open(portName, O_RDWR | O_NOCTTY );
     if (fd <0) return -1;
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
