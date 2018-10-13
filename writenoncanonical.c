@@ -19,6 +19,10 @@
 #define TRUE 1
 #define EMISSOR_FLAG 1
 
+#define A 0x03
+#define C 0x03
+#define BCC A ^ C
+
 volatile int STOP=FALSE;
 
 stateMachine st;
@@ -32,7 +36,18 @@ void atende(){
 
 
 void writemessage(int fd){
-    send_SET(fd);
+    int res;
+    
+    unsigned char buf[6];
+    buf[0] = FLAG;
+    buf[1] = A;
+    buf[2] = C;
+    buf[3] = BCC;
+    buf[4] = FLAG;
+    buf[5] = 0;
+
+    res = write(fd,buf,sizeof(buf));
+    printf("%d bytes written\n", res);
 }
 
 

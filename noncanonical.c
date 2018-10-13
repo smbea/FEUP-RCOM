@@ -100,6 +100,12 @@ int main(int argc, char **argv) {
 	// just for debug
 	printf("Recieved\n");
 
+	// display the received packet in hexadecimal
+	unsigned char j;
+	for (j = 0; j < i; j++) {
+		printf("frame %d:%x\n", j, packet[j]);
+	}
+
 	// acknowledge the received SET packet and send back UA
 	send_UA(fd);
 
