@@ -47,7 +47,7 @@ void writemessage(int fd){
     printf("%x\n", buf);
 
     res = write(fd,buf,sizeof(buf));
-    printf("%d bytes written\n", res);
+    printf("%d bytes written \n", res);
 }
 
 
