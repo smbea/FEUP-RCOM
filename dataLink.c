@@ -1,15 +1,16 @@
 #include "dataLink.h"
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
+#include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <termios.h>
-#include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
-int flag=1, conta=1;
+int send_flag=1, conta=1;
 
 int llopen(int port, int f){
    int fd, i;
@@ -20,9 +21,7 @@ int llopen(int port, int f){
     else if (port==0 )portName = "/dev/ttyS0";
     else return -1;
     
-  //f 1 if trnasmitter, 0 if receiver
    fd = open(portName, O_RDWR | O_NOCTTY );
-   printf("%d\n",fd);
     if (fd <0) {;return -1; }
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
@@ -56,15 +55,20 @@ int llopen(int port, int f){
     }
 
     printf("New termios structure set\n");
+
+	if(f == EMISSOR_FLAG) open_emissor(fd);
+	else if(f == RECEIVER_FLAG) open_receiver(fd);
+
     return fd;
 }
 
 
 void atende(){
 	printf("alarme # %d\n", conta);
-	flag=1;
+	send_flag=1;
 	conta++;
 }
+
 
 void open_emissor(int fd){
   int res;
@@ -80,21 +84,21 @@ void open_emissor(int fd){
   sigaction(SIGALRM, &act,NULL);  
 
   while(conta < 4){
-    if(flag){
+    if(send_flag){
 
 	printf("writing message\n");
         send_SET(fd);
 
         alarm(3);                 // activa alarme de 3s
 	printf("sent alarm\n");
-        flag=0;
+        send_flag=0;
     }
 
     while(1){
       	res = read(fd,&teste,1);
         printf("%x\n", teste);
         (*st.currentStateFunc)(&st, teste);
-        if(st.currentState == END || flag) break;
+        if(st.currentState == END || send_flag) break;
     }
 
      if(st.currentState == END) return;
