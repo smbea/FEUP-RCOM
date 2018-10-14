@@ -124,29 +124,6 @@ int main(int argc, char** argv)
     }
 
 
-    // char message[255];
-    // i = 0;
-    //
-    // while (STOP==FALSE) {       /* loop for input */
-    //     res = read(fd,buf,1);
-    //     buf[res] = 0;
-    //     message[i] = buf[0];
-    //     i++;
-    //     if(buf[0] == '\0')
-    //         STOP=TRUE;
-    // }
-    /*unsigned char teste;
-
-    while(st.currentState != END){
-      	res = read(fd,&teste,1);
-	       if (res > 0){
-	         printf("%x\n", teste);
-        	(*st.currentStateFunc)(&st, teste);
-	       }
-    }*/
-
-
-
     fflush(NULL);
 
 
