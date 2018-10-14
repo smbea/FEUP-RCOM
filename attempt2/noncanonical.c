@@ -1,5 +1,5 @@
 /*Non-Canonical Input Processing*/
-
+#include "stateMachine.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -71,9 +71,31 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-	char message[255];
+
+	stateMachine st;
+	st.currentState = START;
+	st.currentStateFunc = &stateStart; 
+
+	unsigned char frame;
+	unsigned char packet[255];
+	unsigned int i = 0;
+	while (st.currentState != END) {
+		if (read(fd, &frame, 1) > 0){
+		(*st.currentStateFunc)(&st, frame);
+
+		// add frame to packet
+		packet[i++] = frame;
+		}
+		
+	}
+
+	printf("received: %X\n", packet);
+
+	send_UA(fd);
+	
+	/* char message[255];
 	int i = 0;
-    while (STOP==FALSE) {       /* loop for input */
+    while (STOP==FALSE) {       // loop for input 
 		res = read(fd,buf,1);
 		buf[res] = 0;
 		message[i] = buf[0];
@@ -82,10 +104,12 @@ int main(int argc, char** argv)
 			STOP=TRUE;
     }
 	
-	printf("Recieved:%s\n", message);
-
+	printf("Recieved:%X\n", message); 
+	
 	res = write(fd,message,strlen(message)+1);
-    	printf("%d bytes written\n", strlen(message) + 1);
+	*/
+	sleep(3);
+    	printf("%d bytes written\n", res);
 
 
 
