@@ -25,9 +25,9 @@ volatile int STOP=FALSE;
 
 int main(int argc, char** argv)
 {
-    int fd,c, res;
+    int fd, res;
     struct termios oldtio,newtio;
-    int i, sum = 0, speed = 0;
+
     int port=0;
 
     if ( (argc < 2) ||
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     fd = llopen(port,EMISSOR_FLAG);
 
     fflush(NULL);
-
+	sleep(2);
 
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");

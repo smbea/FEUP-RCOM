@@ -13,7 +13,7 @@
 int send_flag=1, conta=1;
 
 int llopen(int port, int f){
-   int fd, i;
+   int fd;
     struct termios oldtio,newtio;
     char * portName;
 
@@ -37,8 +37,8 @@ int llopen(int port, int f){
     /* set input mode (non-canonical, no echo,...) */
     newtio.c_lflag = 0;
 
-    newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 1;
+    newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+    newtio.c_cc[VMIN]     = 0;
 
 
   /*
@@ -96,8 +96,10 @@ void open_emissor(int fd){
 
     while(1){
       	res = read(fd,&teste,1);
-        printf("%x\n", teste);
-        (*st.currentStateFunc)(&st, teste);
+	if (res > 0){
+		printf("%x\n", teste);
+        	(*st.currentStateFunc)(&st, teste);	
+	}
         if(st.currentState == END || send_flag) break;
     }
 
@@ -117,15 +119,14 @@ void open_receiver(int fd){
 	unsigned char packet[255];
 	unsigned int i = 0;
 	while (st.currentState != END) {
-		if(read(fd, &frame, 1) != 1) {
-			// something went wrong
-			perror("Failed to get frame!");
-		}
-		// update the state machine
+		if (read(fd, &frame, 1) > 0){
+			// update the state machine
 		(*st.currentStateFunc)(&st, frame);
 
 		// add frame to packet
 		packet[i++] = frame;
+		}
+		
 	}
 
 	// just for debug
