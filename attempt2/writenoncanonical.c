@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -15,7 +16,14 @@
 #define FALSE 0
 #define TRUE 1
 
+int send_flag=1, conta=1;
 volatile int STOP=FALSE;
+
+void atende(int signo){
+	printf("alarme # %d\n", conta);
+	send_flag=1;
+	conta++;
+}
 
 int main(int argc, char** argv)
 {
@@ -80,8 +88,41 @@ int main(int argc, char** argv)
     st.currentState = START;
     st.currentStateFunc = &stateStart;
 
+    struct sigaction act;
+    act.sa_handler = atende;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
 
-    send_SET(fd);
+    if (sigaction(SIGALRM, &act,NULL) == -1){
+      printf("Error\n");
+      exit(-1);
+    }
+
+    unsigned char teste;
+
+    while(conta < 4){
+      if(send_flag){
+
+          printf("writing message\n");
+          send_SET(fd);
+
+          alarm(3);                 // activa alarme de 3s
+          printf("sent alarm\n");
+          send_flag=0;
+      }
+
+      while(1){
+          res = read(fd,&teste,1);
+        if (res > 0){
+          printf("%x\n", teste);
+                (*st.currentStateFunc)(&st, teste);
+        }
+              if(st.currentState == END || send_flag) break;
+          }
+
+       if(st.currentState == END) return;
+    }
+
 
     // char message[255];
     // i = 0;
@@ -94,7 +135,7 @@ int main(int argc, char** argv)
     //     if(buf[0] == '\0')
     //         STOP=TRUE;
     // }
-    unsigned char teste;
+    /*unsigned char teste;
 
     while(st.currentState != END){
       	res = read(fd,&teste,1);
@@ -102,7 +143,7 @@ int main(int argc, char** argv)
 	         printf("%x\n", teste);
         	(*st.currentStateFunc)(&st, teste);
 	       }
-    }
+    }*/
 
 
 
