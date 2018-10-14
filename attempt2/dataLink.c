@@ -33,7 +33,7 @@ int main(int argc, char** argv){
 
 //
   if(atoi(argv[2])==0) r_e_flag = EMISSOR_FLAG;
-  else if(atoi(argv[1])==1) r_e_flag = RECEIVER_FLAG;
+  else if(atoi(argv[2])==1) r_e_flag = RECEIVER_FLAG;
   else{
     printf("Second argument invalid\n");
     exit(1);
