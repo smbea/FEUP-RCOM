@@ -18,5 +18,10 @@ enum port{
 
 //functions
 int llopen(int port, int f);
+void open_receiver(int fd);
+void atende(int signo);
+void open_emissor(int fd);
+void send_SET(int fd);
+void send_UA(int fd);
 
 #endif

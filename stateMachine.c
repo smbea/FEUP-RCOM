@@ -17,8 +17,8 @@ int initStateMachine(stateMachine *st) {
 int stateStart(stateMachine *st, byte input) {
 	if(st->currentState != START)
 		return -1; // unexpected machine state
-	
-	// if the input matches 
+
+	// if the input matches
 	if(input == FLAG) {
 		printf("Transitioned to flag_rcv state\n");
 		// transitate the state to FLAG_RCV and update function
@@ -54,7 +54,7 @@ int stateFlag(stateMachine *st, byte input) {
 int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
-	
+
 	if(input == SET || input == DISC || input == UA) {
 		// do something I guess...
 		printf("Transitioned to c_rcv state\n");
@@ -78,7 +78,7 @@ int stateAddress(stateMachine *st, byte input) {
 int stateProtection(stateMachine *st, byte input) {
 	if(st->currentState != C_RCV)
 		return -1;
-	
+
 	if(input == FLAG) {
 		printf("Got flag, back to flag state\n");
 		st->currentState = FLAG;
@@ -110,27 +110,6 @@ int stateBCC(stateMachine *st, byte input) {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
 	}
-
-	return 0;
-}
-
-/**
- * The code below isn't in any way related with state machine, are just functions 
- * 
- */
-int send_SET(int fd) {
-	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
-	write(fd, buf, 5);
-	printf("sent SET packet\n");
-
-	return 0;
-}
-
-int send_UA(int fd) {
-	// TODO
-	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
-	write(fd, buf, 5);
-	printf("sent UA packet\n");
 
 	return 0;
 }

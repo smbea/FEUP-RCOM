@@ -98,24 +98,19 @@ int llopen(int port, int r_e_flag){
 }
 
 void open_receiver(int fd){
- 
+
   st.currentState = START;
 	st.currentStateFunc = &stateStart;
 
 	unsigned char frame;
-	unsigned char packet[255];
-	unsigned int i = 0;
 	while (st.currentState != END) {
 		if (read(fd, &frame, 1) > 0){
 		(*st.currentStateFunc)(&st, frame);
 
-		// add frame to packet
-		packet[i++] = frame;
+    printf("received: %X\n", frame);
 		}
 
 	}
-
-	printf("received: %X\n", packet);
 
 	send_UA(fd);
 
@@ -168,4 +163,18 @@ void open_emissor(int fd){
 
      if(st.currentState == END) return;
   }
+}
+
+
+void send_SET(int fd) {
+	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
+	write(fd, buf, 5);
+	printf("sent SET packet\n");
+}
+
+void send_UA(int fd) {
+	// TODO
+	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
+	write(fd, buf, 5);
+	printf("sent UA packet\n");
 }
