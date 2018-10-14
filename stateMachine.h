@@ -31,9 +31,9 @@ typedef struct stateMachine {
 
 /**
  * @brief Initializes the state machine
- *
+ * 
  * @param st The state machine to be intialized
- * @return int
+ * @return int 
  */
 int initStateMachine(stateMachine *st);
 
