@@ -26,7 +26,7 @@ enum ControlField {
 // and a function pointer that processes input for that state
 typedef struct stateMachine {
 	State currentState;
-	int (*currentStateFunc)(void*, byte);
+	int (*currentStateFunc)(void*, byte, int);
 } stateMachine;
 
 /**
@@ -37,9 +37,9 @@ typedef struct stateMachine {
  */
 int initStateMachine(stateMachine *st);
 
-int stateStart(stateMachine *st, byte input);
-int stateFlag(stateMachine *st, byte input);
-int stateAddress(stateMachine *st, byte input);
-int stateProtection(stateMachine *st, byte input);
-int stateBCC(stateMachine *st, byte input);
+int stateStart(stateMachine *st, byte input, int expct);
+int stateFlag(stateMachine *st, byte input, int expct);
+int stateAddress(stateMachine *st, byte input, int expct);
+int stateProtection(stateMachine *st, byte input, int expct);
+int stateBCC(stateMachine *st, byte input, int expct);
 #endif

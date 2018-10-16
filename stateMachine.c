@@ -14,7 +14,7 @@ int initStateMachine(stateMachine *st) {
 /**
  * Processes the input when the machine is in the Start state
  */
-int stateStart(stateMachine *st, byte input) {
+int stateStart(stateMachine *st, byte input, int expct) {
 	if(st->currentState != START)
 		return -1; // unexpected machine state
 
@@ -31,7 +31,7 @@ int stateStart(stateMachine *st, byte input) {
 	return 0;
 }
 
-int stateFlag(stateMachine *st, byte input) {
+int stateFlag(stateMachine *st, byte input, int expct) {
 	if(st->currentState != FLAG_RCV)
 		return -1;
 
@@ -51,11 +51,11 @@ int stateFlag(stateMachine *st, byte input) {
 	return 0;
 }
 
-int stateAddress(stateMachine *st, byte input) {
+int stateAddress(stateMachine *st, byte input, int expct) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-	if(input == SET || input == DISC || input == UA) {
+	if(input == expct) {
 		// do something I guess...
 		printf("Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
@@ -75,7 +75,7 @@ int stateAddress(stateMachine *st, byte input) {
 	return 0;
 }
 
-int stateProtection(stateMachine *st, byte input) {
+int stateProtection(stateMachine *st, byte input, int expct) {
 	if(st->currentState != C_RCV)
 		return -1;
 
@@ -100,7 +100,7 @@ int stateProtection(stateMachine *st, byte input) {
 	return 0;
 }
 
-int stateBCC(stateMachine *st, byte input) {
+int stateBCC(stateMachine *st, byte input, int expct) {
 	if(st->currentState != BCC_RCV)
 		return -1;
 
