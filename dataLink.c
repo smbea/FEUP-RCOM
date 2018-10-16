@@ -99,17 +99,16 @@ int llopen(int port, int r_e_flag){
 
 void open_receiver(int fd){
 
-  st.currentState = START;
+  	st.currentState = START;
 	st.currentStateFunc = &stateStart;
 
 	unsigned char frame;
 	while (st.currentState != END) {
 		if (read(fd, &frame, 1) > 0){
-		(*st.currentStateFunc)(&st, frame);
+			(*st.currentStateFunc)(&st, frame);
 
-    printf("received: %X\n", frame);
+    		printf("received: %X\n", frame);
 		}
-
 	}
 
 	send_UA(fd);
@@ -124,6 +123,7 @@ void atende(int signo){
 }
 
 void open_emissor(int fd){
+ 
   int res;
 
   st.currentState = START;
@@ -154,11 +154,11 @@ void open_emissor(int fd){
 
     while(1){
         res = read(fd,&teste,1);
-      if (res > 0){
-        printf("%x\n", teste);
-              (*st.currentStateFunc)(&st, teste);
-      }
-            if(st.currentState == END || send_flag) break;
+      	if (res > 0){
+        	printf("%x\n", teste);
+       		(*st.currentStateFunc)(&st, teste);
+      		}
+		if(st.currentState == END || send_flag) break;
         }
 
      if(st.currentState == END) return;
@@ -177,4 +177,99 @@ void send_UA(int fd) {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
 	printf("sent UA packet\n");
+}
+
+void send_DISC(int fd, int r_e_flag){
+	unsigned char buf[5];	
+	
+	if(!r_e_flag)	
+		buf[5] = {FLAG, SENT_BY_EMISSOR, DISC, SENT_BY_EMISSOR ^ DISC, FLAG};
+	else
+		buf[5] = {FLAG, SENT_BY_RECEPTOR, DISC, SENT_BY_RECEPTOR ^ DISC, FLAG};
+
+	write(fd, buf, 5);
+	
+	printf("sent DISC packet\n");
+}
+
+void close_receiver(int fd){
+	
+	//Waits for first DISC flag
+	st.currentState = START;
+	st.currentStateFunc = &stateStart;
+
+	unsigned char frame;
+	//currentStateFunc functions should be changed to force a specific flag(UA/SET/DISC)
+	while (st.currentState != END) {
+		if (read(fd, &frame, 1) > 0){
+			(*st.currentStateFunc)(&st, frame);
+
+    		printf("received: %X\n", frame);
+		}
+
+	}//DISC flag received
+
+	
+
+	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
+	st.currentState = START;
+  	st.currentStateFunc = &stateStart;
+
+  	struct sigaction act;
+  	act.sa_handler = atende;
+  	sigemptyset(&act.sa_mask);
+  	act.sa_flags = 0;
+
+	 if (sigaction(SIGALRM, &act,NULL) == -1){
+	    printf("Error\n");
+	    exit(-1);
+	 }
+
+ 	unsigned char teste;
+
+  	while(conta < 4){
+		if(send_flag){
+
+		    printf("writing message\n");
+			send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
+
+		    alarm(3);                 // activa alarme de 3s
+		    printf("sent alarm\n");
+		    send_flag=0;
+		}
+
+		while(1){
+		    res = read(fd,&teste,1);
+		  	if (res > 0){
+		    	printf("%x\n", teste);
+		   		(*st.currentStateFunc)(&st, teste);
+		  		}
+			if(st.currentState == END || send_flag) break;
+		    }
+
+		 if(st.currentState == END) return;
+	  }
+}
+
+int close_emissor(int fd){
+	//TODO
+}
+
+int llclose(int fd){
+
+ 
+	if(r_e_flag == RECEIVER_FLAG) close_receiver(fd);
+  else if(r_e_flag == EMISSOR_FLAG) close_emissor(fd);
+	
+
+	fflush(NULL);
+
+  	if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+    	perror("tcsetattr");
+    	exit(-1);
+  	}
+	
+	close(fd);
+	
+	return 1; //positive return value for success
 }
