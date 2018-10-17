@@ -5,7 +5,7 @@ typedef unsigned char byte;
 
 // Enumerator with all possible machine states
 typedef enum st {
-	START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, END
+	START, FLAG_RCV, A_RCV, C_RCV, BCC1, DATA, BCC2	,END
 } State;
 
 // Possible values for the field Address
@@ -20,6 +20,7 @@ enum ControlField {
 	DISC = 0x0B,
 	UA = 0x07
 };
+
 
 // Struct that represents the machine in some instant
 // It holds the current state
@@ -41,5 +42,7 @@ int stateStart(stateMachine *st, byte input, int expct);
 int stateFlag(stateMachine *st, byte input, int expct);
 int stateAddress(stateMachine *st, byte input, int expct);
 int stateProtection(stateMachine *st, byte input, int expct);
-int stateBCC(stateMachine *st, byte input, int expct);
+int stateDATA(stateMachine *st, byte input,int xorData);
+int stateBCC1(stateMachine *st, byte input, int expct);
+int stateBCC2(stateMachine *st, byte input);
 #endif

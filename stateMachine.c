@@ -84,14 +84,14 @@ int stateProtection(stateMachine *st, byte input, int expct) {
 		st->currentState = FLAG;
 		st->currentStateFunc = stateFlag;
 	} else if (input == (SENT_BY_EMISSOR^SET)) {
-		printf("Transitioned to bcc_rcv state\n");
-		st->currentState = BCC_RCV;
-		st->currentStateFunc = stateBCC;
+		printf("Transitioned to BCC1 state\n");
+		st->currentState = BCC1;
+		st->currentStateFunc = stateBCC1;
 	}
 	else if (input == (SENT_BY_RECEPTOR^UA)) {
-		printf("Transitioned to bcc_rcv state\n");
-		st->currentState = BCC_RCV;
-		st->currentStateFunc = stateBCC;
+		printf("Transitioned to BCC1 state\n");
+		st->currentState = BCC1;
+		st->currentStateFunc = stateBCC1;
 	} else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
@@ -100,12 +100,45 @@ int stateProtection(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateBCC(stateMachine *st, byte input, int expct) {
-	if(st->currentState != BCC_RCV)
+int stateBCC1(stateMachine *st, byte input, int expct) {
+	if(st->currentState != BCC1)
 		return -1;
 
 	if(input == FLAG) {
 		st->currentState = END;
+	} else {
+		st->currentState = DATA;
+		st->currentStateFunc = stateDATA;
+	}
+
+	return 0;
+}
+
+int stateDATA(stateMachine *st, byte input,int xorData) {
+	if(st->currentState != DATA)
+		return -1;
+
+	if(input == FLAG) {
+		st->currentState = START;
+		st->currentStateFunc = stateStart;
+
+	} else if (input == xorData){
+		st->currentState = BCC2;
+		st->currentStateFunc = stateBCC2;
+	}
+
+	return 0;
+}
+
+
+
+int stateBCC2(stateMachine *st, byte input) {
+	if(st->currentState != BCC2)
+		return -1;
+
+	if(input == FLAG) {
+		st->currentState = END;
+
 	} else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
