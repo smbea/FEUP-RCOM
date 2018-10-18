@@ -118,16 +118,17 @@ int llopen(int port, int r_e_flag)
 
 void open_receiver(int fd)
 {
-
+	/*
 	st.currentState = START;
-	st.currentStateFunc = &stateStart;
+	st.currentStateFunc = &stateStart;*/
+	initStateMachine(&st,RECEIVER_FLAG,SET);
 
 	unsigned char frame;
 	while (st.currentState != END)
 	{
 		if (read(fd, &frame, 1) > 0)
 		{
-			(*st.currentStateFunc)(&st, frame, SET);
+			(*st.currentStateFunc)(&st, frame);
 
 			printf("received: %X\n", frame);
 		}
@@ -150,8 +151,10 @@ void open_emissor(int fd)
 
 	int res;
 
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;
+	/*st.currentState = START;
+	st.currentStateFunc = &stateStart;*/
+
+	initStateMachine(&st,EMISSOR_FLAG,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -185,7 +188,7 @@ void open_emissor(int fd)
 			if (res > 0)
 			{
 				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste, UA);
+				(*st.currentStateFunc)(&st, teste);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -240,15 +243,17 @@ void close_receiver(int fd)
 
 	int res;
 	//Waits for first DISC flag
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;
+	/*st.currentState = START;
+	st.currentStateFunc = &stateStart;*/
+
+	initStateMachine(&st,RECEIVER_FLAG,DISC);
 
 	unsigned char frame;
 	while (st.currentState != END)
 	{
 		if (read(fd, &frame, 1) > 0)
 		{
-			(*st.currentStateFunc)(&st, frame, DISC);
+			(*st.currentStateFunc)(&st, frame);
 
 			printf("received: %X\n", frame);
 		}
@@ -256,8 +261,7 @@ void close_receiver(int fd)
 	} //DISC flag received
 
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;
+	initStateMachine(&st,RECEIVER_FLAG,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -291,7 +295,7 @@ void close_receiver(int fd)
 			if (res > 0)
 			{
 				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste, UA);
+				(*st.currentStateFunc)(&st, teste);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -307,8 +311,7 @@ void close_emissor(int fd)
 
 	int res;
 
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;
+	initStateMachine(&st,EMISSOR_FLAG,DISC);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -342,7 +345,7 @@ void close_emissor(int fd)
 			if (res > 0)
 			{
 				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste, DISC);
+				(*st.currentStateFunc)(&st, teste);
 			}
 			if (st.currentState == END || send_flag)
 				break;

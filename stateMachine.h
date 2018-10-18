@@ -5,7 +5,7 @@ typedef unsigned char byte;
 
 // Enumerator with all possible machine states
 typedef enum st {
-	START, FLAG_RCV, A_RCV, C_RCV, BCC1, DATA, BCC2	,END
+	START, FLAG_RCV, A_RCV, C_RCV, BCC, BCC1, DATA,DESTUFFING, BCC2	,END
 } State;
 
 // Possible values for the field Address
@@ -14,6 +14,8 @@ enum AddressField {
 	SENT_BY_RECEPTOR = 0x01
 };
 
+unsigned char currentA;
+
 // Possible values for the control field. Not complete tho..
 enum ControlField {
 	SET = 0x03,
@@ -21,13 +23,15 @@ enum ControlField {
 	UA = 0x07
 };
 
+byte currentType; 
+
 
 // Struct that represents the machine in some instant
 // It holds the current state
 // and a function pointer that processes input for that state
 typedef struct stateMachine {
 	State currentState;
-	int (*currentStateFunc)(void*, byte, int);
+	int (*currentStateFunc)(void*, byte);
 } stateMachine;
 
 /**
@@ -36,13 +40,13 @@ typedef struct stateMachine {
  * @param st The state machine to be intialized
  * @return int 
  */
-int initStateMachine(stateMachine *st);
+int initStateMachine(stateMachine *st, unsigned char r_e_flag, unsigned char type);
 
-int stateStart(stateMachine *st, byte input, int expct);
-int stateFlag(stateMachine *st, byte input, int expct);
-int stateAddress(stateMachine *st, byte input, int expct);
-int stateProtection(stateMachine *st, byte input, int expct);
-int stateDATA(stateMachine *st, byte input,int xorData);
-int stateBCC1(stateMachine *st, byte input, int expct);
-int stateBCC2(stateMachine *st, byte input);
+int stateStart(stateMachine *st, byte input);
+int stateFlag(stateMachine *st, byte input);
+int stateAddress(stateMachine *st, byte input);
+int stateProtection(stateMachine *st, byte input);
+int stateDATA(stateMachine *st, byte input);
+int stateBCC1(stateMachine *st, byte input);
+int stateBCC(stateMachine *st, byte input);
 #endif

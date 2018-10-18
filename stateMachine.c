@@ -4,17 +4,22 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int initStateMachine(stateMachine *st) {
+int initStateMachine(stateMachine *st, unsigned char r_e_flag, unsigned char type) {
 	st->currentState = START;
 	st->currentStateFunc = &stateStart;
 
+	if(r_e_flag) currentA = SENT_BY_RECEPTOR;
+	else currentA = SENT_BY_EMISSOR;
+
+	currentA = type;
+	
 	return 0;
 }
 
 /**
  * Processes the input when the machine is in the Start state
  */
-int stateStart(stateMachine *st, byte input, int expct) {
+int stateStart(stateMachine *st, byte input) {
 	if(st->currentState != START)
 		return -1; // unexpected machine state
 
@@ -31,14 +36,15 @@ int stateStart(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateFlag(stateMachine *st, byte input, int expct) {
+int stateFlag(stateMachine *st, byte input) {
 	if(st->currentState != FLAG_RCV)
 		return -1;
 
 	if(input == FLAG) {
 		printf("Staying in FLAG state");
-	} else if(input == SENT_BY_EMISSOR || input == SENT_BY_RECEPTOR) {
+	} else if(input == currentA) {
 		printf("Transitioned to a_rcv state\n");
+		currentA = input;
 		st->currentState = A_RCV;
 		st->currentStateFunc = &stateAddress;
 	} else {
@@ -51,12 +57,11 @@ int stateFlag(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateAddress(stateMachine *st, byte input, int expct) {
+int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-	if(input == expct) {
-		// do something I guess...
+	if(input == currentType) {
 		printf("Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
@@ -75,7 +80,7 @@ int stateAddress(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateProtection(stateMachine *st, byte input, int expct) {
+int stateProtection(stateMachine *st, byte input) {
 	if(st->currentState != C_RCV)
 		return -1;
 
@@ -83,15 +88,18 @@ int stateProtection(stateMachine *st, byte input, int expct) {
 		printf("Got flag, back to flag state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = stateFlag;
-	} else if (input == (SENT_BY_EMISSOR^SET)) {
-		printf("Transitioned to BCC1 state\n");
-		st->currentState = BCC1;
-		st->currentStateFunc = stateBCC1;
-	}
-	else if (input == (SENT_BY_RECEPTOR^UA)) {
-		printf("Transitioned to BCC1 state\n");
-		st->currentState = BCC1;
-		st->currentStateFunc = stateBCC1;
+	} else if (input == (currentA^currentType)) {
+
+		if((currentType==SET) || (currentType==UA) || (currentType=DISC)){
+			printf("Transitioned to BCC state\n");
+			st->currentState = BCC;
+			st->currentStateFunc = stateBCC;
+
+		}else {
+			printf("Transitioned to BCC1 state\n");
+			st->currentState = BCC1;
+			st->currentStateFunc = stateBCC;
+		}
 	} else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
@@ -100,12 +108,26 @@ int stateProtection(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateBCC1(stateMachine *st, byte input, int expct) {
-	if(st->currentState != BCC1)
+int stateBCC(stateMachine *st, byte input) {
+	if(st->currentState != BCC)
 		return -1;
 
 	if(input == FLAG) {
 		st->currentState = END;
+	} else {
+		st->currentState = START;
+		st->currentStateFunc = stateStart;
+	}
+
+}
+
+int stateBCC1(stateMachine *st, byte input) {
+	if(st->currentState != BCC1)
+		return -1;
+
+	if(input == FLAG) {
+		st->currentState = FLAG_RCV;
+		st->currentStateFunc = stateFlag;
 	} else {
 		st->currentState = DATA;
 		st->currentStateFunc = stateDATA;
@@ -114,35 +136,12 @@ int stateBCC1(stateMachine *st, byte input, int expct) {
 	return 0;
 }
 
-int stateDATA(stateMachine *st, byte input,int xorData) {
+int stateDATA(stateMachine *st, byte input) {
 	if(st->currentState != DATA)
 		return -1;
 
-	if(input == FLAG) {
-		st->currentState = START;
-		st->currentStateFunc = stateStart;
-
-	} else if (input == xorData){
-		st->currentState = BCC2;
-		st->currentStateFunc = stateBCC2;
-	}
-
-	return 0;
-}
-
-
-
-int stateBCC2(stateMachine *st, byte input) {
-	if(st->currentState != BCC2)
-		return -1;
-
-	if(input == FLAG) {
+	if(input == FLAG)
 		st->currentState = END;
-
-	} else {
-		st->currentState = START;
-		st->currentStateFunc = stateStart;
-	}
-
 	return 0;
 }
+
