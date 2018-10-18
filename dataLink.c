@@ -243,8 +243,6 @@ void close_receiver(int fd)
 
 	int res;
 	//Waits for first DISC flag
-	/*st.currentState = START;
-	st.currentStateFunc = &stateStart;*/
 
 	initStateMachine(&st,RECEIVER_FLAG,DISC);
 
@@ -275,35 +273,30 @@ void close_receiver(int fd)
 	}
 
 	unsigned char teste;
+	
+	printf("writing message\n");
+	send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
 
-	while (conta < 4)
-	{ //4 tentativas de alarme
-		if (send_flag)
+	//if doesn't receive UA back in 3 seconds ends anyway
+
+	alarm(3); // activa alarme de 3s
+	printf("sent alarm\n");
+	send_flag = 0;
+
+
+	while (1)
+	{
+		res = read(fd, &teste, 1);
+		if (res > 0)
 		{
-
-			printf("writing message\n");
-			send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
-
-			alarm(3); // activa alarme de 3s
-			printf("sent alarm\n");
-			send_flag = 0;
+			printf("%x\n", teste);
+			(*st.currentStateFunc)(&st, teste);
 		}
-
-		while (1)
-		{
-			res = read(fd, &teste, 1);
-			if (res > 0)
-			{
-				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
-			}
-			if (st.currentState == END || send_flag)
-				break;
-		}
-
-		if (st.currentState == END)
-			return;
+		if (st.currentState == END || send_flag)
+			break;
 	}
+
+	if(send_flag) printf("Wanrning: UA was not received");
 }
 
 void close_emissor(int fd)
