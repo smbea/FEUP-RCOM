@@ -186,8 +186,11 @@ void open_emissor(int fd)
 				break;
 		}
 
-		if (st.currentState == END)
+		if (st.currentState == END){
+			sigignore(SIGALRM);
 			return;
+		}
+	
 	}
 }
 
@@ -349,6 +352,7 @@ void close_emissor(int fd,int r_e_flag)
 
 	unsigned char teste;
 
+
 	while (conta < 4)
 	{
 		if (send_flag)
@@ -376,6 +380,7 @@ void close_emissor(int fd,int r_e_flag)
 
 		if (st.currentState == END)
 		{
+			sigignore(SIGALRM);
 			send_UA(fd);
 			return;
 		}
@@ -430,8 +435,10 @@ int llwrite(int fd, char * buffer, int length) {
 				break;
 		}
 
-		if (st.currentState == END)
+		if (st.currentState == END){
+			sigignore(SIGALRM);
 			return res1;
+		}
 	}
 	return res1;
 }
