@@ -52,13 +52,7 @@ int main(int argc, char **argv)
 
 	fflush(NULL);
 
-	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
-	{
-		perror("tcsetattr");
-		exit(-1);
-	}
-
-	close(fd);
+	llclose(fd,r_e_flag);
 
 	return 0;
 }
@@ -122,7 +116,7 @@ void open_receiver(int fd)
 	/*
 	st.currentState = START;
 	st.currentStateFunc = &stateStart;*/
-	initStateMachine(&st,RECEIVER_FLAG,SET);
+	initStateMachine(&st,SENT_BY_EMISSOR,SET);
 
 	unsigned char frame;
 	while (st.currentState != END)
@@ -152,7 +146,7 @@ void open_emissor(int fd)
 
 	int res;
 
-	initStateMachine(&st,EMISSOR_FLAG,UA);
+	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -200,11 +194,11 @@ void open_emissor(int fd)
 /*void send_US(int fd, unsigned char US, unsigned char r_e_flag)
 {
 	unsigned char buf[5] = {FLAG, 0, US, 0, FLAG};
-	
+
 	if (r_e_flag == SENT_BY_EMISSOR){
 			buf[1] = SENT_BY_EMISSOR;
 			buf[3] = SENT_BY_EMISSOR ^ US;
-	
+
 	}else if (r_e_flag == SENT_BY_RECEPTOR){
 			buf[1] = SENT_BY_RECEPTOR;
 			buf[3] = SENT_BY_RECEPTOR ^ US;
@@ -244,7 +238,7 @@ int send_I(int fd, char * data, int length, unsigned char control){
 	if(res > 0 ){
 		printf("sent I packet\n");
 		return res;
-	} 
+	}
 	return -1;
 }
 
@@ -252,17 +246,19 @@ int send_DISC(int fd, int r_e_flag)
 {
 	unsigned char buf[5] = {FLAG, 0 , DISC, 0, FLAG};
 
-	if (r_e_flag == SENT_BY_EMISSOR){
+	if (r_e_flag == EMISSOR_FLAG){
 			buf[1] = SENT_BY_EMISSOR;
 			buf[3] = SENT_BY_EMISSOR ^ DISC;
 		}
-	else if (r_e_flag == SENT_BY_RECEPTOR){
+	else if (r_e_flag == RECEIVER_FLAG){
 			buf[1] = SENT_BY_RECEPTOR;
 			buf[3] = SENT_BY_RECEPTOR ^ DISC;
 		}
 	else{
 		return -1;
 	}
+
+	printf("DISC: %x\n",buf[2]);
 	write(fd, buf, 5);
 
 	printf("sent DISC packet\n");
@@ -278,7 +274,7 @@ void close_receiver(int fd)
 	int res;
 	//Waits for first DISC flag
 
-	initStateMachine(&st,RECEIVER_FLAG,DISC);
+	initStateMachine(&st,SENT_BY_EMISSOR,DISC);
 
 	unsigned char frame;
 	while (st.currentState != END)
@@ -293,7 +289,7 @@ void close_receiver(int fd)
 	} //DISC flag received
 
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
-	initStateMachine(&st,RECEIVER_FLAG,UA);
+	initStateMachine(&st,SENT_BY_EMISSOR,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -307,7 +303,7 @@ void close_receiver(int fd)
 	}
 
 	unsigned char teste;
-	
+
 	printf("writing message\n");
 	send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
 
@@ -338,7 +334,7 @@ void close_emissor(int fd)
 
 	int res;
 
-	initStateMachine(&st,EMISSOR_FLAG,DISC);
+	initStateMachine(&st,SENT_BY_RECEPTOR,DISC);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -462,7 +458,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
 	for(i = 0; i < length; i++, j++) {
 		if(buffer[i] == flagChar) {
 			stuffedBuffer[j] = escapeChar;
-			stuffedBuffer[++j] = flagChar ^ 0x20;  
+			stuffedBuffer[++j] = flagChar ^ 0x20;
 		} else if(buffer[i] == escapeChar) {
 			stuffedBuffer[j] = escapeChar;
 			stuffedBuffer[++j] = escapeChar ^ 0x20;
@@ -474,6 +470,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
 
 int llclose(int fd, int r_e_flag)
 {
+	printf("\nLLCLOSE\n");
 	conta = 1, send_flag=1;
 
 	if (r_e_flag == RECEIVER_FLAG)
