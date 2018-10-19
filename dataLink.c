@@ -246,11 +246,11 @@ int send_DISC(int fd, int r_e_flag)
 {
 	unsigned char buf[5] = {FLAG, 0 , DISC, 0, FLAG};
 
-	if (r_e_flag == EMISSOR_FLAG){
+	if (r_e_flag == SENT_BY_EMISSOR){
 			buf[1] = SENT_BY_EMISSOR;
 			buf[3] = SENT_BY_EMISSOR ^ DISC;
 		}
-	else if (r_e_flag == RECEIVER_FLAG){
+	else if (r_e_flag == SENT_BY_RECEPTOR){
 			buf[1] = SENT_BY_RECEPTOR;
 			buf[3] = SENT_BY_RECEPTOR ^ DISC;
 		}
