@@ -13,6 +13,7 @@
 
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
+unsigned char ns = 0x00;
 
 int main(int argc, char **argv)
 {
@@ -151,9 +152,6 @@ void open_emissor(int fd)
 
 	int res;
 
-	/*st.currentState = START;
-	st.currentStateFunc = &stateStart;*/
-
 	initStateMachine(&st,EMISSOR_FLAG,UA);
 
 	struct sigaction act;
@@ -199,6 +197,23 @@ void open_emissor(int fd)
 	}
 }
 
+/*void send_US(int fd, unsigned char US, unsigned char r_e_flag)
+{
+	unsigned char buf[5] = {FLAG, 0, US, 0, FLAG};
+	
+	if (r_e_flag == SENT_BY_EMISSOR){
+			buf[1] = SENT_BY_EMISSOR;
+			buf[3] = SENT_BY_EMISSOR ^ US;
+	
+	}else if (r_e_flag == SENT_BY_RECEPTOR){
+			buf[1] = SENT_BY_RECEPTOR;
+			buf[3] = SENT_BY_RECEPTOR ^ US;
+	}
+
+	write(fd, buf, sizeof(buf));
+	printf("sent US packet\n");
+}*/
+
 void send_SET(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
@@ -208,10 +223,29 @@ void send_SET(int fd)
 
 void send_UA(int fd)
 {
-	// TODO
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
 	printf("sent UA packet\n");
+}
+
+int send_I(int fd, char * data, int length, unsigned char control){
+
+	int res = 0;
+	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
+	int j = 4;
+
+	for(int i = 0; i<length; i++){
+		buf[j] = data[i];
+		j++;
+	}
+
+	res = write(fd, buf, sizeof(buf));
+
+	if(res > 0 ){
+		printf("sent I packet\n");
+		return res;
+	} 
+	return -1;
 }
 
 int send_DISC(int fd, int r_e_flag)
@@ -296,7 +330,7 @@ void close_receiver(int fd)
 			break;
 	}
 
-	if(send_flag) printf("Wanrning: UA was not received");
+	if(send_flag) printf("Wanrning: UA was not received\n");
 }
 
 void close_emissor(int fd)
@@ -354,18 +388,70 @@ void close_emissor(int fd)
 
 int llwrite(int fd, char * buffer, int length) {
 
+	char * stuffedBuffer = NULL;
+	int res2 = 0, res1=0;
+	unsigned char teste;
+	conta = 1, send_flag=1;
+
+	initStateMachine(&st,EMISSOR_FLAG,UA);
+
+	struct sigaction act;
+	act.sa_handler = atende;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+
+	if (sigaction(SIGALRM, &act, NULL) == -1)
+	{
+		printf("Error\n");
+		exit(-1);
+	}
+
+	byteStuffing(buffer,length,stuffedBuffer);
+	genNextNs();
+
+	while (conta < 4)
+	{
+		if (send_flag)
+		{
+
+			printf("writing frame\n");
+			res1 = send_I(fd,stuffedBuffer,length,ns);
+			if(res1<0) return -1;
+
+			alarm(3); // activa alarme de 3s
+			send_flag = 0;
+		}
+
+		while (1)
+		{
+			res2 = read(fd, &teste, 1);
+			if (res2 > 0)
+			{
+				printf("%x\n", teste);
+				(*st.currentStateFunc)(&st, teste);
+			}
+			if (st.currentState == END || send_flag)
+				break;
+		}
+
+		if (st.currentState == END)
+			return res1;
+	}
+	return res1;
 }
 
-void byteStuffing(char * buffer, int length, char * stuffedBuffer, int stuffedLength) {
+void genNextNs(){
+	if(ns == 0x00) ns = 0x40;
+	else ns = 0x00;
+}
+
+
+void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
 	/**
 	 * Compute the BCC
 	 */
-	unsigned int i, j;
-	unsigned char bcc = 0;
-	// compute BCC
-	for(i = 0; i < length; i++) {
-		bcc ^= buffer[i];
-	}
+	unsigned int i;
+	unsigned int  j = 0;
 
 	/**
 	 * Parse the data and perform byte stuffing
@@ -380,9 +466,6 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer, int stuffedLe
 		} else if(buffer[i] == escapeChar) {
 			stuffedBuffer[j] = escapeChar;
 			stuffedBuffer[++j] = escapeChar ^ 0x20;
-		} else if(buffer[i] == bcc) {
-			stuffedBuffer[j] = escapeChar;
-			stuffedBuffer[++j] = bcc ^ 0x20; // not sure about this
 		} else {
 			stuffedBuffer[j] = buffer[i];
 		}
@@ -391,6 +474,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer, int stuffedLe
 
 int llclose(int fd, int r_e_flag)
 {
+	conta = 1, send_flag=1;
 
 	if (r_e_flag == RECEIVER_FLAG)
 		close_receiver(fd);
@@ -402,7 +486,7 @@ int llclose(int fd, int r_e_flag)
 	if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
 	{
 		perror("tcsetattr");
-		exit(-1);
+		return -1; //negative return for error
 	}
 
 	close(fd);
