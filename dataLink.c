@@ -146,7 +146,7 @@ void open_emissor(int fd)
 
 	int res;
 
-	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
+	initStateMachine(&st,EMISSOR_FLAG,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
