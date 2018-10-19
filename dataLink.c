@@ -219,6 +219,7 @@ void send_UA(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
+	printf("\n %x %x %x %x %x\n",buf[0],buf[1],buf[2],buf[3],buf[4]);
 	printf("sent UA packet\n");
 }
 
@@ -246,11 +247,11 @@ int send_DISC(int fd, int r_e_flag)
 {
 	unsigned char buf[5] = {FLAG, 0 , DISC, 0, FLAG};
 
-	if (r_e_flag == SENT_BY_EMISSOR){
+	if (r_e_flag == EMISSOR_FLAG){
 			buf[1] = SENT_BY_EMISSOR;
 			buf[3] = SENT_BY_EMISSOR ^ DISC;
 		}
-	else if (r_e_flag == SENT_BY_RECEPTOR){
+	else if (r_e_flag == RECEIVER_FLAG){
 			buf[1] = SENT_BY_RECEPTOR;
 			buf[3] = SENT_BY_RECEPTOR ^ DISC;
 		}
@@ -268,7 +269,7 @@ int send_DISC(int fd, int r_e_flag)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd, int r_e_flag)
+void close_receiver(int fd)
 {
 
 	int res;
@@ -305,7 +306,7 @@ void close_receiver(int fd, int r_e_flag)
 	unsigned char teste;
 
 	printf("writing message\n");
-	send_DISC(fd, r_e_flag); //sends DISC flag back to the emissor
+	send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
 
 	//if doesn't receive UA back in 3 seconds ends anyway
 
@@ -329,9 +330,8 @@ void close_receiver(int fd, int r_e_flag)
 	if(send_flag) printf("Wanrning: UA was not received\n");
 }
 
-void close_emissor(int fd,int r_e_flag)
+void close_emissor(int fd, int r_e_flag)
 {
-
 	int res;
 
 	initStateMachine(&st,SENT_BY_RECEPTOR,DISC);
@@ -389,7 +389,7 @@ int llwrite(int fd, char * buffer, int length) {
 	unsigned char teste;
 	conta = 1, send_flag=1;
 
-	initStateMachine(&st,SENT_BY_EMISSOR,UA);
+	initStateMachine(&st,EMISSOR_FLAG,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -474,7 +474,7 @@ int llclose(int fd, int r_e_flag)
 	conta = 1, send_flag=1;
 
 	if (r_e_flag == RECEIVER_FLAG)
-		close_receiver(fd,r_e_flag);
+		close_receiver(fd);
 	else if (r_e_flag == EMISSOR_FLAG)
 		close_emissor(fd,r_e_flag);
 
