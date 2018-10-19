@@ -213,15 +213,19 @@ void send_UA(int fd)
 
 int send_DISC(int fd, int r_e_flag)
 {
-	unsigned char buf[5];
+	unsigned char buf[5] = {FLAG, 0 , DISC, 0, FLAG};
 
-	if (r_e_flag == SENT_BY_EMISSOR)
-		buf[5] = {FLAG, SENT_BY_EMISSOR, DISC, SENT_BY_EMISSOR ^ DISC, FLAG};
-	else if (r_e_flag == SENT_BY_RECEPTOR)
-		buf[5] = {FLAG, SENT_BY_RECEPTOR, DISC, SENT_BY_RECEPTOR ^ DISC, FLAG};
-	else
+	if (r_e_flag == SENT_BY_EMISSOR){
+			buf[1] = SENT_BY_EMISSOR;
+			buf[3] = SENT_BY_EMISSOR ^ DISC;
+		}
+	else if (r_e_flag == SENT_BY_RECEPTOR){
+			buf[1] = SENT_BY_RECEPTOR;
+			buf[3] = SENT_BY_RECEPTOR ^ DISC;
+		}
+	else{
 		return -1;
-
+	}
 	write(fd, buf, 5);
 
 	printf("sent DISC packet\n");
@@ -230,10 +234,11 @@ int send_DISC(int fd, int r_e_flag)
 }
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
-//should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA?
+//should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
 void close_receiver(int fd)
 {
 
+	int res;
 	//Waits for first DISC flag
 	st.currentState = START;
 	st.currentStateFunc = &stateStart;
@@ -299,6 +304,7 @@ void close_receiver(int fd)
 
 void close_emissor(int fd)
 {
+
 	int res;
 
 	st.currentState = START;
@@ -387,7 +393,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer, int stuffedLe
 	}
 }
 
-int llclose(int fd)
+int llclose(int fd, int r_e_flag)
 {
 
 	if (r_e_flag == RECEIVER_FLAG)
