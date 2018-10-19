@@ -350,6 +350,43 @@ void close_emissor(int fd)
 	}
 }
 
+int llwrite(int fd, char * buffer, int length) {
+
+}
+
+void byteStuffing(char * buffer, int length, char * stuffedBuffer, int stuffedLength) {
+	/**
+	 * Compute the BCC
+	 */
+	unsigned int i, j;
+	unsigned char bcc = 0;
+	// compute BCC
+	for(i = 0; i < length; i++) {
+		bcc ^= buffer[i];
+	}
+
+	/**
+	 * Parse the data and perform byte stuffing
+	 */
+	unsigned char escapeChar = 0x7d;
+	unsigned char flagChar = 0x7e;
+
+	for(i = 0; i < length; i++, j++) {
+		if(buffer[i] == flagChar) {
+			stuffedBuffer[j] = escapeChar;
+			stuffedBuffer[++j] = flagChar ^ 0x20;  
+		} else if(buffer[i] == escapeChar) {
+			stuffedBuffer[j] = escapeChar;
+			stuffedBuffer[++j] = escapeChar ^ 0x20;
+		} else if(buffer[i] == bcc) {
+			stuffedBuffer[j] = escapeChar;
+			stuffedBuffer[++j] = bcc ^ 0x20; // not sure about this
+		} else {
+			stuffedBuffer[j] = buffer[i];
+		}
+	}
+}
+
 int llclose(int fd)
 {
 
