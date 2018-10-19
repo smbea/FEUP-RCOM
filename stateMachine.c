@@ -4,15 +4,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int initStateMachine(stateMachine *st, unsigned char r_e_flag, unsigned char type) {
+int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char type) {
 	st->currentState = START;
 	st->currentStateFunc = &stateStart;
 
-	if(r_e_flag) currentA = SENT_BY_RECEPTOR;
-	else currentA = SENT_BY_EMISSOR;
+	currentA = r_e_char ;
 
-	currentA = type;
-	
+	currentType = type;
+
 	return 0;
 }
 
@@ -44,7 +43,6 @@ int stateFlag(stateMachine *st, byte input) {
 		printf("Staying in FLAG state");
 	} else if(input == currentA) {
 		printf("Transitioned to a_rcv state\n");
-		currentA = input;
 		st->currentState = A_RCV;
 		st->currentStateFunc = &stateAddress;
 	} else {
@@ -58,8 +56,11 @@ int stateFlag(stateMachine *st, byte input) {
 }
 
 int stateAddress(stateMachine *st, byte input) {
+
 	if(st->currentState != A_RCV)
 		return -1;
+
+		printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
 
 	if(input == currentType) {
 		printf("Transitioned to c_rcv state\n");
@@ -144,4 +145,3 @@ int stateDATA(stateMachine *st, byte input) {
 		st->currentState = END;
 	return 0;
 }
-
