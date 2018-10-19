@@ -162,6 +162,7 @@ void open_emissor(int fd)
 	unsigned char teste;
 
 	while (conta < 4)
+	
 	{
 		if (send_flag)
 		{
