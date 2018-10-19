@@ -291,7 +291,7 @@ void close_receiver(int fd, int r_e_flag)
 	} //DISC flag received
 
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
-	initStateMachine(&st,SENT_BY_EMISSOR,UA);
+	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
