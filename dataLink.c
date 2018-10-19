@@ -146,7 +146,7 @@ void open_emissor(int fd)
 
 	int res;
 
-	initStateMachine(&st,EMISSOR_FLAG,UA);
+	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -268,7 +268,7 @@ int send_DISC(int fd, int r_e_flag)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd)
+void close_receiver(int fd, int r_e_flag)
 {
 
 	int res;
@@ -305,7 +305,7 @@ void close_receiver(int fd)
 	unsigned char teste;
 
 	printf("writing message\n");
-	send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
+	send_DISC(fd, r_e_flag); //sends DISC flag back to the emissor
 
 	//if doesn't receive UA back in 3 seconds ends anyway
 
@@ -329,7 +329,7 @@ void close_receiver(int fd)
 	if(send_flag) printf("Wanrning: UA was not received\n");
 }
 
-void close_emissor(int fd)
+void close_emissor(int fd,int r_e_flag)
 {
 
 	int res;
@@ -355,7 +355,7 @@ void close_emissor(int fd)
 		{
 
 			printf("writing message\n");
-			send_DISC(fd, SENT_BY_EMISSOR);
+			send_DISC(fd, r_e_flag);
 
 			alarm(3); // activa alarme de 3s
 			printf("sent alarm\n");
@@ -389,7 +389,7 @@ int llwrite(int fd, char * buffer, int length) {
 	unsigned char teste;
 	conta = 1, send_flag=1;
 
-	initStateMachine(&st,EMISSOR_FLAG,UA);
+	initStateMachine(&st,SENT_BY_EMISSOR,UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -474,9 +474,9 @@ int llclose(int fd, int r_e_flag)
 	conta = 1, send_flag=1;
 
 	if (r_e_flag == RECEIVER_FLAG)
-		close_receiver(fd);
+		close_receiver(fd,r_e_flag);
 	else if (r_e_flag == EMISSOR_FLAG)
-		close_emissor(fd);
+		close_emissor(fd,r_e_flag);
 
 	fflush(NULL);
 
