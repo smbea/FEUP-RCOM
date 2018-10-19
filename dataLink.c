@@ -230,11 +230,11 @@ void send_UA(int fd)
 
 int send_I(int fd, char * data, int length, unsigned char control){
 
-	int res = 0;
+	int res = 0, i = 0;
 	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
 	int j = 4;
 
-	for(int i = 0; i<length; i++){
+	for( i = 0; i<length; i++){
 		buf[j] = data[i];
 		j++;
 	}
