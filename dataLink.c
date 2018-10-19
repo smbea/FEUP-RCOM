@@ -270,7 +270,7 @@ int send_DISC(int fd, int r_e_flag)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd)
+void close_receiver(int fd, int r_e_flag)
 {
 
 	int res;
@@ -306,29 +306,34 @@ void close_receiver(int fd)
 
 	unsigned char teste;
 
-	printf("writing message\n");
-	send_DISC(fd, RECEIVER_FLAG); //sends DISC flag back to the emissor
-
-	//if doesn't receive UA back in 3 seconds ends anyway
-
-	alarm(3); // activa alarme de 3s
-	printf("sent alarm\n");
-	send_flag = 0;
-
-
-	while (1)
-	{
-		res = read(fd, &teste, 1);
-		if (res > 0)
+	while (conta < 4)
+	{ //4 tentativas de alarme
+		if (send_flag)
 		{
-			printf("%x\n", teste);
-			(*st.currentStateFunc)(&st, teste);
-		}
-		if (st.currentState == END || send_flag)
-			break;
-	}
 
-	if(send_flag) printf("Wanrning: UA was not received\n");
+			printf("writing message\n");
+			send_DISC(fd, r_e_flag); //sends DISC flag back to the emissor
+
+			alarm(3); // activa alarme de 3s
+			printf("sent alarm\n");
+			send_flag = 0;
+		}
+
+		while (1)
+		{
+			res = read(fd, &teste, 1);
+			if (res > 0)
+			{
+				printf("%x\n", teste);
+				(*st.currentStateFunc)(&st, teste);
+			}
+			if (st.currentState == END || send_flag)
+				break;
+		}
+
+		if (st.currentState == END)
+			return;
+	}
 }
 
 void close_emissor(int fd, int r_e_flag)
@@ -475,7 +480,7 @@ int llclose(int fd, int r_e_flag)
 	conta = 1, send_flag=1;
 
 	if (r_e_flag == RECEIVER_FLAG)
-		close_receiver(fd);
+		close_receiver(fd, r_e_flag);
 	else if (r_e_flag == EMISSOR_FLAG)
 		close_emissor(fd,r_e_flag);
 
