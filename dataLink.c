@@ -442,9 +442,8 @@ int llwrite(int fd, char * buffer, int length) {
 			if(st.currentState == A_RCV){
 				if(exitSt == 0)
 					genNextNs();
-				else if(exitSt == 1){
-					//TODO: send previous packet (?)
-				}
+				else if(exitSt == 1)
+					send_flag = 1; //last packet had an error must be resent.
 			}
 			if (st.currentState == END || send_flag)
 				break;
