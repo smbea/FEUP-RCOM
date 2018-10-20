@@ -162,7 +162,7 @@ void open_emissor(int fd)
 	unsigned char teste;
 
 	while (conta < 4)
-	
+
 	{
 		if (send_flag)
 		{
@@ -230,7 +230,7 @@ int send_I(int fd, char * data, int length, unsigned char control){
 	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
 	int j = 4;
 
-	for( i = 0; i<length; i++){
+	for( i = 0; i < length; i++){
 		buf[j] = data[i];
 		j++;
 	}
@@ -334,6 +334,7 @@ void close_receiver(int fd, int r_e_flag)
 		if (st.currentState == END)
 			return;
 	}
+	printf("Communication closed by timeout. Last UA not received.\n");
 }
 
 void close_emissor(int fd, int r_e_flag)
@@ -388,14 +389,18 @@ void close_emissor(int fd, int r_e_flag)
 	}
 }
 
+
 int llwrite(int fd, char * buffer, int length) {
 
 	char * stuffedBuffer = NULL;
-	int res2 = 0, res1=0;
+	int res2 = 0, res1=0, exitSt = 0;
 	unsigned char teste;
 	conta = 1, send_flag=1;
 
-	initStateMachine(&st,EMISSOR_FLAG,UA);
+	if(ns == 0x40)
+		initStateMachine(&st,EMISSOR_FLAG, RR0);
+	else if(ns == 0x00)
+		initStateMachine(&st,EMISSOR_FLAG, RR1);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -409,7 +414,9 @@ int llwrite(int fd, char * buffer, int length) {
 	}
 
 	byteStuffing(buffer,length,stuffedBuffer);
-	genNextNs();
+	//talvez esta função só devesse ser chamada
+	//depois da confirmação do receptor (RR)
+	//genNextNs();
 
 	while (conta < 4)
 	{
@@ -417,8 +424,8 @@ int llwrite(int fd, char * buffer, int length) {
 		{
 
 			printf("writing frame\n");
-			res1 = send_I(fd,stuffedBuffer,length,ns);
-			if(res1<0) return -1;
+			res1 = send_I(fd, stuffedBuffer, length, ns);
+			if(res1 < 0) return -1;
 
 			alarm(3); // activa alarme de 3s
 			send_flag = 0;
@@ -430,7 +437,14 @@ int llwrite(int fd, char * buffer, int length) {
 			if (res2 > 0)
 			{
 				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				exitSt = (*st.currentStateFunc)(&st, teste);
+			}
+			if(st.currentState == A_RCV){
+				if(exitSt == 0)
+					genNextNs();
+				else if(exitSt == 1){
+					//TODO: send previous packet (?)
+				}
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -453,7 +467,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
 	 * Compute the BCC
 	 */
 	unsigned int i;
-	unsigned int  j = 0;
+	unsigned int j = 0;
 
 	/**
 	 * Parse the data and perform byte stuffing
