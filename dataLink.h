@@ -33,6 +33,7 @@ void open_emissor(int fd);
 void send_SET(int fd);
 void send_UA(int fd);
 void byteStuffing(char * buffer, int length, char * stuffedBuffer);
+int llclose(int fd, int r_e_flag);
 void genNextNs();
 int llwrite(int fd, char * buffer, int length);
 
