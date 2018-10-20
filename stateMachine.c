@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+
+
+
 int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char type) {
 	st->currentState = START;
 	st->currentStateFunc = &stateStart;
@@ -71,6 +74,13 @@ int stateAddress(stateMachine *st, byte input) {
 		printf("Got FLAG, back to flag state state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
+	}
+	//The packet was reject no use in continuing state machine, back to start
+	else if(input == REJ0 || input == REJ1){
+		printf("Packet rejected\n");
+		st->currentState = START;
+		st->currentStateFunc = &stateStart;
+		return 1;
 	} else {
 		// unknown input
 		printf("Unknown input, back to start\n");
