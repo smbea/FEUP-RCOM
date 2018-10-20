@@ -8,6 +8,8 @@ typedef enum st {
 	START, FLAG_RCV, A_RCV, C_RCV, BCC, BCC1, DATA,DESTUFFING, BCC2	,END
 } State;
 
+
+
 // Possible values for the field Address
 enum AddressField {
 	SENT_BY_EMISSOR = 0x03,
@@ -20,10 +22,14 @@ unsigned char currentA;
 enum ControlField {
 	SET = 0x03,
 	DISC = 0x0B,
-	UA = 0x07
+	UA = 0x07,
+	RR0 = 0x03,
+	RR1 = 0x83,
+	REJ0 = 0x01,
+	REJ1 = 0x81, 
 };
 
-byte currentType; 
+byte currentType;
 
 
 // Struct that represents the machine in some instant
@@ -36,9 +42,9 @@ typedef struct stateMachine {
 
 /**
  * @brief Initializes the state machine
- * 
+ *
  * @param st The state machine to be intialized
- * @return int 
+ * @return int
  */
 int initStateMachine(stateMachine *st, unsigned char r_e_flag, unsigned char type);
 
