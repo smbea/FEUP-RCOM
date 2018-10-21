@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
 	fflush(NULL);
 
-	llclose(fd,r_e_flag);
+	llclose(fd, r_e_flag);
 
 	return 0;
 }
@@ -116,7 +116,7 @@ void open_receiver(int fd)
 	/*
 	st.currentState = START;
 	st.currentStateFunc = &stateStart;*/
-	initStateMachine(&st,SENT_BY_EMISSOR,SET);
+	initStateMachine(&st, SENT_BY_EMISSOR, SET);
 
 	unsigned char frame;
 	while (st.currentState != END)
@@ -146,7 +146,7 @@ void open_emissor(int fd)
 
 	int res;
 
-	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
+	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -220,24 +220,31 @@ void send_UA(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
-	printf("\n %x %x %x %x %x\n",buf[0],buf[1],buf[2],buf[3],buf[4]);
+	printf("\n %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
 	printf("sent UA packet\n");
 }
 
-int send_I(int fd, char * data, int length, unsigned char control){
+int send_I(int fd, char *data, int length, unsigned char control)
+{
 
 	int res = 0, i = 0;
 	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
 	int j = 4;
+	unsigned char bcc2 = 0x00;
 
-	for( i = 0; i < length; i++){
+	for (i = 0; i < length; i++)
+	{
 		buf[j] = data[i];
+		bcc2 = bcc2 ^ data[i];
 		j++;
 	}
+	buf[j++] = bcc2;
+	buf[j] = FLAG;
 
 	res = write(fd, buf, sizeof(buf));
 
-	if(res > 0 ){
+	if (res > 0)
+	{
 		printf("sent I packet\n");
 		return res;
 	}
@@ -246,21 +253,24 @@ int send_I(int fd, char * data, int length, unsigned char control){
 
 int send_DISC(int fd, int r_e_flag)
 {
-	unsigned char buf[5] = {FLAG, 0 , DISC, 0, FLAG};
+	unsigned char buf[5] = {FLAG, 0, DISC, 0, FLAG};
 
-	if (r_e_flag == EMISSOR_FLAG){
-			buf[1] = SENT_BY_EMISSOR;
-			buf[3] = SENT_BY_EMISSOR ^ DISC;
-		}
-	else if (r_e_flag == RECEIVER_FLAG){
-			buf[1] = SENT_BY_RECEPTOR;
-			buf[3] = SENT_BY_RECEPTOR ^ DISC;
-		}
-	else{
+	if (r_e_flag == EMISSOR_FLAG)
+	{
+		buf[1] = SENT_BY_EMISSOR;
+		buf[3] = SENT_BY_EMISSOR ^ DISC;
+	}
+	else if (r_e_flag == RECEIVER_FLAG)
+	{
+		buf[1] = SENT_BY_RECEPTOR;
+		buf[3] = SENT_BY_RECEPTOR ^ DISC;
+	}
+	else
+	{
 		return -1;
 	}
 
-	printf("DISC: %x\n",buf[2]);
+	printf("DISC: %x\n", buf[2]);
 	write(fd, buf, 5);
 
 	printf("sent DISC packet\n");
@@ -276,7 +286,7 @@ void close_receiver(int fd, int r_e_flag)
 	int res;
 	//Waits for first DISC flag
 
-	initStateMachine(&st,SENT_BY_EMISSOR,DISC);
+	initStateMachine(&st, SENT_BY_EMISSOR, DISC);
 
 	unsigned char frame;
 	while (st.currentState != END)
@@ -291,7 +301,7 @@ void close_receiver(int fd, int r_e_flag)
 	} //DISC flag received
 
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
-	initStateMachine(&st,SENT_BY_RECEPTOR,UA);
+	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -341,7 +351,7 @@ void close_emissor(int fd, int r_e_flag)
 {
 	int res;
 
-	initStateMachine(&st,SENT_BY_RECEPTOR,DISC);
+	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -389,18 +399,18 @@ void close_emissor(int fd, int r_e_flag)
 	}
 }
 
+int llwrite(int fd, char *buffer, int length)
+{
 
-int llwrite(int fd, char * buffer, int length) {
-
-	char * stuffedBuffer = NULL;
-	int res2 = 0, res1=0, exitSt = 0;
+	char *stuffedBuffer = NULL;
+	int res2 = 0, res1 = 0, exitSt = 0;
 	unsigned char teste;
-	conta = 1, send_flag=1;
+	conta = 1, send_flag = 1;
 
-	if(ns == 0x40)
-		initStateMachine(&st,EMISSOR_FLAG, RR0);
-	else if(ns == 0x00)
-		initStateMachine(&st,EMISSOR_FLAG, RR1);
+	if (ns == 0x40)
+		initStateMachine(&st, EMISSOR_FLAG, RR0);
+	else if (ns == 0x00)
+		initStateMachine(&st, EMISSOR_FLAG, RR1);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -413,7 +423,7 @@ int llwrite(int fd, char * buffer, int length) {
 		exit(-1);
 	}
 
-	byteStuffing(buffer,length,stuffedBuffer);
+	byteStuffing(buffer, length, stuffedBuffer);
 	//talvez esta função só devesse ser chamada
 	//depois da confirmação do receptor (RR)
 	//genNextNs();
@@ -425,7 +435,8 @@ int llwrite(int fd, char * buffer, int length) {
 
 			printf("writing frame\n");
 			res1 = send_I(fd, stuffedBuffer, length, ns);
-			if(res1 < 0) return -1;
+			if (res1 < 0)
+				return -1;
 
 			alarm(3); // activa alarme de 3s
 			send_flag = 0;
@@ -439,10 +450,11 @@ int llwrite(int fd, char * buffer, int length) {
 				printf("%x\n", teste);
 				exitSt = (*st.currentStateFunc)(&st, teste);
 			}
-			if(st.currentState == A_RCV){
-				if(exitSt == 0)
+			if (st.currentState == A_RCV)
+			{
+				if (exitSt == 0)
 					genNextNs();
-				else if(exitSt == 1)
+				else if (exitSt == 1)
 					send_flag = 1; //last packet had an error must be resent.
 			}
 			if (st.currentState == END || send_flag)
@@ -455,13 +467,16 @@ int llwrite(int fd, char * buffer, int length) {
 	return res1;
 }
 
-void genNextNs(){
-	if(ns == 0x00) ns = 0x40;
-	else ns = 0x00;
+void genNextNs()
+{
+	if (ns == 0x00)
+		ns = 0x40;
+	else
+		ns = 0x00;
 }
 
-
-void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
+void byteStuffing(char *buffer, int length, char *stuffedBuffer)
+{
 	/**
 	 * Compute the BCC
 	 */
@@ -474,28 +489,73 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer) {
 	unsigned char escapeChar = 0x7d;
 	unsigned char flagChar = 0x7e;
 
-	for(i = 0; i < length; i++, j++) {
-		if(buffer[i] == flagChar) {
+	for (i = 0; i < length; i++, j++)
+	{
+		if (buffer[i] == flagChar)
+		{
 			stuffedBuffer[j] = escapeChar;
 			stuffedBuffer[++j] = flagChar ^ 0x20;
-		} else if(buffer[i] == escapeChar) {
+		}
+		else if (buffer[i] == escapeChar)
+		{
 			stuffedBuffer[j] = escapeChar;
 			stuffedBuffer[++j] = escapeChar ^ 0x20;
-		} else {
+		}
+		else
+		{
 			stuffedBuffer[j] = buffer[i];
 		}
 	}
 }
 
+int llread(int fd, char *buffer)
+{
+	int res = 0;
+	unsigned char teste;
+	int bccSuccess = 0;
+
+	initStateMachine(&st, RECEIVER_FLAG, ns);
+
+	struct sigaction act;
+	act.sa_handler = atende;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+
+	if (sigaction(SIGALRM, &act, NULL) == -1)
+	{
+		printf("Error\n");
+		exit(-1);
+	}
+	while (1)
+	{
+		res = read(fd, &teste, 1);
+		if (res > 0)
+		{
+			printf("%x\n", teste);
+			exitSt = (*st.currentStateFunc)(&st, teste);
+		}
+		if (st.currentState == FLAG_END)
+			bccSuccess = 1;
+		if (st.currentState == END)
+		{
+			if (bccSuccess)
+				buffer = st.message;
+			break;
+		}
+	}
+	//TODO: Send response (RR/REJ) to emissor
+}
+
+
 int llclose(int fd, int r_e_flag)
 {
 	printf("\nLLCLOSE\n");
-	conta = 1, send_flag=1;
+	conta = 1, send_flag = 1;
 
 	if (r_e_flag == RECEIVER_FLAG)
 		close_receiver(fd, r_e_flag);
 	else if (r_e_flag == EMISSOR_FLAG)
-		close_emissor(fd,r_e_flag);
+		close_emissor(fd, r_e_flag);
 
 	fflush(NULL);
 

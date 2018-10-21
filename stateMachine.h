@@ -38,6 +38,8 @@ byte currentType;
 typedef struct stateMachine {
 	State currentState;
 	int (*currentStateFunc)(void*, byte);
+	char message[255];
+	unsigned char prev;
 } stateMachine;
 
 /**

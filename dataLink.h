@@ -36,5 +36,7 @@ void byteStuffing(char * buffer, int length, char * stuffedBuffer);
 int llclose(int fd, int r_e_flag);
 void genNextNs();
 int llwrite(int fd, char * buffer, int length);
+int llread(int fd, char * buffer);
+
 
 #endif
