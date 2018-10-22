@@ -10,12 +10,15 @@
 int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char type) {
 	st->currentState = START;
 	st->currentStateFunc = &stateStart;
+	st->index = 0;
 
 	currentA = r_e_char ;
 
 	currentType = type;
 
 	bccCheck = 0;
+
+	
 
 	return 0;
 }
@@ -152,7 +155,7 @@ int stateBCC1(stateMachine *st, byte input) {
 int stateDATA(stateMachine *st, byte input) {
 	
 	unsigned char temp;
-
+	
 	if(st->currentState != DATA)
 		return -1;
 
@@ -167,11 +170,11 @@ int stateDATA(stateMachine *st, byte input) {
 	}
 	else
 	{
-		temp = destuffByte(input, st->prev)
+		temp = destuffByte(input, st->prev);
 		st->prev = input;
 		if(temp != NULL){
 			bccCheck = bccCheck ^ temp;
-			st->message[index++] = temp;
+			st->message[st->index++] = temp;
 		}
 	}
 	return 0;
@@ -183,9 +186,9 @@ byte destuffByte(byte input, byte prevInput)
 		return NULL;
 	if(prevInput != ESCAPE)
 		return input;
-	else if(input == FLAG ^ 0x20)
+	else if(input == (FLAG ^ 0x20))
 		return FLAG;
-	else if(input == ESCAPE ^ 0x20)
+	else if(input == (ESCAPE ^ 0x20))
 		return ESCAPE;
 }
 

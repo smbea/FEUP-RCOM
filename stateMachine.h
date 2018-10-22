@@ -2,6 +2,7 @@
 #define STATE_MACHINE_H
 typedef unsigned char byte;
 #define FLAG 0x7E
+#define ESCAPE 0x7D
 
 // Enumerator with all possible machine states
 typedef enum st {
@@ -41,7 +42,8 @@ typedef struct stateMachine {
 	State currentState;
 	int (*currentStateFunc)(void*, byte);
 	char message[255];
-	unsigned char prev;
+	byte prev;
+	int index;
 } stateMachine;
 
 /**
@@ -59,4 +61,6 @@ int stateProtection(stateMachine *st, byte input);
 int stateDATA(stateMachine *st, byte input);
 int stateBCC1(stateMachine *st, byte input);
 int stateBCC(stateMachine *st, byte input);
+int stateEND_FLAG(stateMachine *st, byte input);
+byte destuffByte(byte input, byte prevInput);
 #endif
