@@ -1,5 +1,5 @@
 all: clean stMachine
-	gcc -Wall dataLink.c stateMachine.o
+	gcc -Wall -o dataLink.o dataLink.c stateMachine.o
 
 stMachine:
 	gcc -Wall -c stateMachine.c

@@ -18,7 +18,7 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 
 	bccCheck = 0;
 
-
+	
 
 	return 0;
 }
@@ -29,6 +29,7 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 int stateStart(stateMachine *st, byte input) {
 	if(st->currentState != START)
 		return -1; // unexpected machine state
+
 
 	// if the input matches
 	if(input == FLAG) {
@@ -106,16 +107,9 @@ int stateProtection(stateMachine *st, byte input) {
 		st->currentStateFunc = stateFlag;
 	} else if (input == (currentA^currentType)) {
 
-		if((currentType==SET) || (currentType==UA) || (currentType=DISC)){
 			printf("Transitioned to BCC state\n");
 			st->currentState = BCC;
 			st->currentStateFunc = stateBCC;
-
-		}else {
-			printf("Transitioned to BCC1 state\n");
-			st->currentState = BCC1;
-			st->currentStateFunc = stateBCC;
-		}
 	} else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
@@ -128,43 +122,33 @@ int stateBCC(stateMachine *st, byte input) {
 	if(st->currentState != BCC)
 		return -1;
 
-	if(input == FLAG) {
-		st->currentState = END;
-	} else {
+	if(currentType == UA || currentType == SET || currentType == DISC){
+		if(input == FLAG) st->currentState = END;
+		else {
 		st->currentState = START;
 		st->currentStateFunc = stateStart;
-	}
-
-}
-
-int stateBCC1(stateMachine *st, byte input) {
-	if(st->currentState != BCC1)
-		return -1;
-
-	if(input == FLAG) {
-		st->currentState = FLAG_RCV;
-		st->currentStateFunc = stateFlag;
-	} else {
+		}
+	}else{
 		st->currentState = DATA;
 		st->currentStateFunc = stateDATA;
 	}
-
-	return 0;
 }
 
+
+
 int stateDATA(stateMachine *st, byte input) {
-
+	
 	unsigned char temp;
-
+	
 	if(st->currentState != DATA)
 		return -1;
 
 	if(input == FLAG){
 		st->currentState = END;
-		return 0; 
+		return 1; //Reached flag wihtout finding BCC -> there was an error(REJ)
 	}
-	/*
-	if(bccCheck == input){ //found BCC -> no errors detected
+
+	/*if(bccCheck == input){ //found BCC -> no errors detected
 		st->currentState = FLAG_END;
 		st->currentStateFunc = stateEND_FLAG;
 	}
@@ -177,7 +161,6 @@ int stateDATA(stateMachine *st, byte input) {
 			st->message[st->index++] = temp;
 		}
 	}*/
-
 	return 0;
 }
 
@@ -194,7 +177,7 @@ byte destuffByte(byte input, byte prevInput)
 }
 
 int stateEND_FLAG(stateMachine *st, byte input){
-
+	
 	if(st->currentState != FLAG_END)
 		return -1;
 

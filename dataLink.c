@@ -563,11 +563,11 @@ int send_R(int fd, int success)
 int llread(int fd, char *buffer)
 {
 	int res = 0, res2 = 0;
-	unsigned char teste;
 	int bccSuccess = 0;
 	int exitSt = 0;
+	int i =0;
 
-	initStateMachine(&st, RECEIVER_FLAG, ns);
+	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -581,11 +581,12 @@ int llread(int fd, char *buffer)
 	}
 	while (1)
 	{
-		res = read(fd, &teste, 1);
+		res = read(fd, buffer + i, 1);
 		if (res > 0)
 		{
-			printf("%x\n", teste);
-			exitSt = (*st.currentStateFunc)(&st, teste);
+			printf("%x\n", buffer[i]);
+			exitSt = (*st.currentStateFunc)(&st, buffer[i]);
+			i++;
 		}
 		if (st.currentState == FLAG_END)
 			bccSuccess = 1;
