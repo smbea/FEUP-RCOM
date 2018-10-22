@@ -508,11 +508,53 @@ void byteStuffing(char *buffer, int length, char *stuffedBuffer)
 	}
 }
 
+int send_R(int fd, int success)
+{
+	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0};
+	if(success)
+	{
+		if(ns == 0x00)
+		{
+			buf[3] = RR1;
+			buf[4] = RR1 ^ SENT_BY_RECEPTOR;
+		}
+		else if(ns == 0x40)
+		{
+			buf[3] = RR0;
+			buf[4] = RR0 ^ SENT_BY_RECEPTOR;
+		}
+		else
+			return -1;
+	}
+	else{
+		if(ns == 0x00)
+		{
+			buf[3] = REJ1;
+			buf[4] = REJ1 ^ SENT_BY_RECEPTOR;
+		}
+		else if(ns == 0x40)
+		{
+			buf[3] = REJ0;
+			buf[4] = REJ0 ^ SENT_BY_RECEPTOR;
+		}
+		else
+			return -1;
+	}
+
+	printf("RR/REJ: %x\n", buf[3]);
+	write(fd, buf, 5);
+
+	printf("Sent response packet\n");
+
+	return 0;
+}
+
 int llread(int fd, char *buffer)
 {
-	int res = 0;
+	int res = 0, res2 = 0;
 	unsigned char teste;
 	int bccSuccess = 0;
+	int exitSt = 0;
 
 	initStateMachine(&st, RECEIVER_FLAG, ns);
 
@@ -543,7 +585,9 @@ int llread(int fd, char *buffer)
 			break;
 		}
 	}
-	//TODO: Send response (RR/REJ) to emissor
+	res2 = send_R(fd, bccSuccess);
+
+	return res2;
 }
 
 
