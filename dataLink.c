@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
 	fflush(NULL);
 
-	unsigned char teste[] = {'o', 'l', 'a', '!', '?'};
+	char teste[6] = {0x00, 0x04, 0x7e, 0x5d, 0x7d, 0x3e};
 	//if(fd > 0)
 		llwrite(fd, teste, 6);
 	//llclose(fd, r_e_flag);
@@ -239,15 +239,20 @@ int send_I(int fd, char *data, int length, unsigned char control)
 
 	for (i = 0; i < length; i++)
 	{
+		printf("%c\n", data[i]);
 		buf[j] = data[i];
 		bcc2 = bcc2 ^ data[i];
 		j++;
 	}
+	printf("stop");
 	buf[j++] = bcc2;
 	buf[j] = FLAG;
-
-	res = write(fd, buf, sizeof(buf));
-
+	for(int i = 0; i <= j; i++) {
+		printf("%d:%x\n", i, buf[i]);
+	}
+	res = write(fd, buf, j+1);
+	//char buf2[6] = {0x00, 0x04, 0x7d, 0x5d, 0x7d, 0x5e};
+	//res = write(fd, buf2, 6);
 	if (res > 0)
 	{
 		printf("sent I packet\n");
@@ -439,7 +444,6 @@ int llwrite(int fd, char *buffer, int length)
 	{
 		if (send_flag)
 		{
-
 			printf("writing frame\n");
 			res1 = send_I(fd, stuffedBuffer, length, ns);
 			if (res1 < 0)

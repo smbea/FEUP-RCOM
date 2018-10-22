@@ -18,7 +18,7 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 
 	bccCheck = 0;
 
-	
+
 
 	return 0;
 }
@@ -153,17 +153,17 @@ int stateBCC1(stateMachine *st, byte input) {
 }
 
 int stateDATA(stateMachine *st, byte input) {
-	
+
 	unsigned char temp;
-	
+
 	if(st->currentState != DATA)
 		return -1;
 
 	if(input == FLAG){
 		st->currentState = END;
-		return 1; //Reached flag wihtout finding BCC -> there was an error(REJ)
+		return 0; 
 	}
-
+	/*
 	if(bccCheck == input){ //found BCC -> no errors detected
 		st->currentState = FLAG_END;
 		st->currentStateFunc = stateEND_FLAG;
@@ -176,7 +176,8 @@ int stateDATA(stateMachine *st, byte input) {
 			bccCheck = bccCheck ^ temp;
 			st->message[st->index++] = temp;
 		}
-	}
+	}*/
+
 	return 0;
 }
 
@@ -193,7 +194,7 @@ byte destuffByte(byte input, byte prevInput)
 }
 
 int stateEND_FLAG(stateMachine *st, byte input){
-	
+
 	if(st->currentState != FLAG_END)
 		return -1;
 
