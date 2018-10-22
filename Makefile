@@ -1,6 +1,8 @@
-make:
-	make clean
-	gcc -Wall -o dataLink.o dataLink.c stateMachine.c
+all: clean stMachine
+	gcc -Wall dataLink.c stateMachine.o
+
+stMachine:
+	gcc -Wall -c stateMachine.c
 
 clean:
-	rm -rf *.o
+		rm -rf *.o
