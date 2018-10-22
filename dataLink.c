@@ -52,7 +52,10 @@ int main(int argc, char **argv)
 
 	fflush(NULL);
 
-	llclose(fd, r_e_flag);
+	unsigned char teste[] = {'o', 'l', 'a', '!', '?'};
+	//if(fd > 0)
+		llwrite(fd, teste, 6);
+	//llclose(fd, r_e_flag);
 
 	return 0;
 }
@@ -187,8 +190,10 @@ void open_emissor(int fd)
 				break;
 		}
 
-		if (st.currentState == END)
+		if (st.currentState == END){
+			sigignore(SIGALRM);
 			return;
+		}
 	}
 }
 
@@ -341,8 +346,10 @@ void close_receiver(int fd, int r_e_flag)
 				break;
 		}
 
-		if (st.currentState == END)
+		if (st.currentState == END){
+			sigignore(SIGALRM);
 			return;
+		}
 	}
 	printf("Communication closed by timeout. Last UA not received.\n");
 }
@@ -391,9 +398,9 @@ void close_emissor(int fd, int r_e_flag)
 				break;
 		}
 
-		if (st.currentState == END)
-		{
+		if (st.currentState == END){
 			send_UA(fd);
+			sigignore(SIGALRM);
 			return;
 		}
 	}
@@ -402,7 +409,7 @@ void close_emissor(int fd, int r_e_flag)
 int llwrite(int fd, char *buffer, int length)
 {
 
-	char *stuffedBuffer = NULL;
+	char stuffedBuffer[256];
 	int res2 = 0, res1 = 0, exitSt = 0;
 	unsigned char teste;
 	conta = 1, send_flag = 1;
