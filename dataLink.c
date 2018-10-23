@@ -50,11 +50,13 @@ int main(int argc, char **argv)
 
 	fd = llopen(port, r_e_flag);
 
-	fflush(NULL);
+	//fflush(NULL);
 
 	char teste[6] = {0x00, 0x04, 0x7e, 0x5d, 0x7d, 0x3e};
+	char teste1[255];
 	//if(fd > 0)
-		llwrite(fd, teste, 6);
+		//llwrite(fd, teste, 6);
+		llread(fd, teste1);
 	//llclose(fd, r_e_flag);
 
 	return 0;
@@ -134,7 +136,7 @@ void open_receiver(int fd)
 
 	send_UA(fd);
 
-	sleep(3);
+	//sleep(3);
 }
 
 void atende(int signo)
@@ -534,7 +536,7 @@ void byteStuffing(char *buffer, int length, char *stuffedBuffer)
 	}
 }
 
-void byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
+int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 {
 	int indexS = 0, indexD = 0;
 	unsigned char escapeChar = 0x7d;
@@ -544,6 +546,7 @@ void byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 	{
 		if(indexS < 4){ //skips the first 4 bytes of the packet (flag,address,control and Bcc1)
 			destuffedBuffer[indexD] = stuffedBuffer[indexS];
+			indexD++;
 			continue;
 		}
 		if(stuffedBuffer[indexS] != escapeChar)
@@ -558,7 +561,7 @@ void byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 		}
 		indexD++;
 	}
-
+	return indexD;
 }
 
 int send_R(int fd, int success)
@@ -614,7 +617,7 @@ char* extractData(char* buffer, int length)
 
 int llread(int fd, char *buffer)
 {
-	int res = 0, res2 = 0;
+	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
 	char destuffed[255];
 	int exitSt = 0;
@@ -644,11 +647,21 @@ int llread(int fd, char *buffer)
 		if (st.currentState == END)
 			break;
 	}
-
-	byteDestuffing(buffer, i, destuffed);
-	if(getBCC(buffer, i, RECEIVER_FLAG) == buffer[i - 2])
+	//TODO: needs debbuging destuffing function not right
+	destuffedSize = byteDestuffing(buffer, i, destuffed);
+	int j;
+	for(j = 0; j < destuffedSize; j++)
+	{
+		printf("DB: %x\n", destuffed[j]);
+	}
+	unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
+	printf("BCC: %x\n", x);
+	printf("BCC recieved: %x\n", destuffed[destuffedSize - 2]);
+	if(getBCC(destuffed, destuffedSize , RECEIVER_FLAG) == destuffed[destuffedSize - 2])
+	{
+		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-
+	}
 	res2 = send_R(fd, bccSuccess);
 
 	return res2;
