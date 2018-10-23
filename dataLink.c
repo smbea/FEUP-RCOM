@@ -229,19 +229,17 @@ void send_UA(int fd)
 	printf("sent UA packet\n");
 }
 
-int send_I(int fd, char *data, int length, unsigned char control)
+int send_I(int fd, char *data, int length, unsigned char control, byte bcc2)
 {
 
 	int res = 0, i = 0;
 	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
 	int j = 4;
-	unsigned char bcc2 = 0x00;
 
 	for (i = 0; i < length; i++)
 	{
 		printf("%c\n", data[i]);
 		buf[j] = data[i];
-		bcc2 = bcc2 ^ data[i];
 		j++;
 	}
 	printf("stop");
@@ -411,12 +409,28 @@ void close_emissor(int fd, int r_e_flag)
 	}
 }
 
+byte getBCC(char* buffer, int length, int r_e_flag)
+{
+		byte bcc = 0;
+		int i;
+		if(r_e_flag == EMISSOR_FLAG)
+			i = 0;
+		else if(r_e_flag == RECEIVER_FLAG){
+			i = 4;
+			length -= 2;
+		}
+		for(; i < length; i++)
+				bcc = bcc ^ buffer[i];
+
+		return bcc;
+}
+
 int llwrite(int fd, char *buffer, int length)
 {
 
 	char stuffedBuffer[256];
 	int res2 = 0, res1 = 0, exitSt = 0;
-	unsigned char teste;
+	unsigned char teste, bcc2;
 	conta = 1, send_flag = 1;
 
 	if (ns == 0x40)
@@ -435,6 +449,7 @@ int llwrite(int fd, char *buffer, int length)
 		exit(-1);
 	}
 
+	bcc2 = getBCC(buffer, length, EMISSOR_FLAG);
 	byteStuffing(buffer, length, stuffedBuffer);
 	//talvez esta função só devesse ser chamada
 	//depois da confirmação do receptor (RR)
@@ -445,7 +460,7 @@ int llwrite(int fd, char *buffer, int length)
 		if (send_flag)
 		{
 			printf("writing frame\n");
-			res1 = send_I(fd, stuffedBuffer, length, ns);
+			res1 = send_I(fd, stuffedBuffer, length, ns, bcc2);
 			if (res1 < 0)
 				return -1;
 
@@ -519,6 +534,33 @@ void byteStuffing(char *buffer, int length, char *stuffedBuffer)
 	}
 }
 
+void byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
+{
+	int indexS = 0, indexD = 0;
+	unsigned char escapeChar = 0x7d;
+	unsigned char flagChar = 0x7e;
+
+	for(indexS = 0; indexS < length; indexS++)
+	{
+		if(indexS < 4){ //skips the first 4 bytes of the packet (flag,address,control and Bcc1)
+			destuffedBuffer[indexD] = stuffedBuffer[indexS];
+			continue;
+		}
+		if(stuffedBuffer[indexS] != escapeChar)
+		{
+			destuffedBuffer[indexD] = stuffedBuffer[indexS];
+		}
+		else{
+			if(stuffedBuffer[++indexS] == (escapeChar ^ 0x20))
+				destuffedBuffer[indexD] = escapeChar;
+			else if(stuffedBuffer[++indexS] == (flagChar ^0x20))
+				destuffedBuffer[indexD] = flagChar;
+		}
+		indexD++;
+	}
+
+}
+
 int send_R(int fd, int success)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0};
@@ -560,10 +602,21 @@ int send_R(int fd, int success)
 	return 0;
 }
 
+char* extractData(char* buffer, int length)
+{
+	int index = 0;
+	char data[length];
+	for(int i = 4; i < length + 4; i++)
+		data[index++] = buffer[i];
+
+	return data;
+}
+
 int llread(int fd, char *buffer)
 {
 	int res = 0, res2 = 0;
 	int bccSuccess = 0;
+	char destuffed[255];
 	int exitSt = 0;
 	int i =0;
 
@@ -588,15 +641,14 @@ int llread(int fd, char *buffer)
 			exitSt = (*st.currentStateFunc)(&st, buffer[i]);
 			i++;
 		}
-		if (st.currentState == FLAG_END)
-			bccSuccess = 1;
 		if (st.currentState == END)
-		{
-			if (bccSuccess)
-				buffer = st.message;
 			break;
-		}
 	}
+
+	byteDestuffing(buffer, i, destuffed);
+	if(getBCC(buffer, i, RECEIVER_FLAG) == buffer[i - 2])
+		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
+
 	res2 = send_R(fd, bccSuccess);
 
 	return res2;
