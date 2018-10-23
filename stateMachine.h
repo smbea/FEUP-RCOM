@@ -24,6 +24,8 @@ enum ControlField {
 	SET = 0x03,
 	DISC = 0x0B,
 	UA = 0x07,
+	S0 = 0x00,
+	S1 = 0X40,
 	RR0 = 0x03,
 	RR1 = 0x83,
 	REJ0 = 0x01,
