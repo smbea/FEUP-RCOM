@@ -549,15 +549,20 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 			indexD++;
 			continue;
 		}
+
+		//printf("found flag %x\n",flagChar ^ 0x20);
 		if(stuffedBuffer[indexS] != escapeChar)
 		{
 			destuffedBuffer[indexD] = stuffedBuffer[indexS];
 		}
 		else{
-			if(stuffedBuffer[++indexS] == (escapeChar ^ 0x20))
+			if(stuffedBuffer[indexS+1] == (escapeChar ^ 0x20)){
 				destuffedBuffer[indexD] = escapeChar;
-			else if(stuffedBuffer[++indexS] == (flagChar ^0x20))
+				indexS++;
+			}else if(stuffedBuffer[indexS+1] == (flagChar ^0x20)){
 				destuffedBuffer[indexD] = flagChar;
+				indexS++;
+			}
 		}
 		indexD++;
 	}
