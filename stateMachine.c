@@ -18,7 +18,7 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 
 	bccCheck = 0;
 
-	
+
 
 	return 0;
 }
@@ -69,7 +69,7 @@ int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-		//printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
+		printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
 
 	if(input == currentType) {
 		printf("Transitioned to c_rcv state\n");
@@ -81,13 +81,7 @@ int stateAddress(stateMachine *st, byte input) {
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
 	}
-	//The packet was reject no use in continuing state machine, back to start
-	else if(input == REJ0 || input == REJ1){
-		printf("Packet rejected\n");
-		st->currentState = START;
-		st->currentStateFunc = &stateStart;
-		return 1;
-	} else {
+	else {
 		// unknown input
 		printf("Unknown input, back to start\n");
 		st->currentState = START;
@@ -122,7 +116,7 @@ int stateBCC(stateMachine *st, byte input) {
 	if(st->currentState != BCC)
 		return -1;
 
-	if(currentType == UA || currentType == SET || currentType == DISC){
+	if(currentType == UA || currentType == SET || currentType == DISC || currentType == RR0 || currentType == RR1){
 		if(input == FLAG) st->currentState = END;
 		else {
 		st->currentState = START;
@@ -137,9 +131,9 @@ int stateBCC(stateMachine *st, byte input) {
 
 
 int stateDATA(stateMachine *st, byte input) {
-	
+
 	unsigned char temp;
-	
+
 	if(st->currentState != DATA)
 		return -1;
 
@@ -177,7 +171,7 @@ byte destuffByte(byte input, byte prevInput)
 }
 
 int stateEND_FLAG(stateMachine *st, byte input){
-	
+
 	if(st->currentState != FLAG_END)
 		return -1;
 
