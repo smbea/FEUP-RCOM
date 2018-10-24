@@ -267,7 +267,7 @@ int send_I(int fd, char *data, int length, unsigned char control, byte bcc2)
 	printf("stop");
 	buf[j++] = bcc2;
 	buf[j] = FLAG;
-	for(int i = 0; i <= j; i++) {
+	for( i = 0; i <= j; i++) {
 		printf("%d:%x\n", i, buf[i]);
 	}
 	res = write(fd, buf, j+1);
@@ -500,7 +500,7 @@ int llwrite(int fd, char *buffer, int length)
 			if (st.currentState == A_RCV)
 			{
 				if (exitSt == 0)
-					genNextNs();
+					genNextNS();
 				else if (exitSt == 1)
 					send_flag = 1; //last packet had an error must be resent.
 			}
@@ -618,7 +618,8 @@ char* extractData(char* buffer, int length)
 {
 	int index = 0;
 	char data[length];
-	for(int i = 4; i < length + 4; i++)
+	int i;
+	for( i = 4; i < length + 4; i++)
 		data[index++] = buffer[i];
 
 	return data;
@@ -671,7 +672,7 @@ int llread(int fd, char *buffer)
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 	}
-	res2 = send_R(fd, bccSuccess);
+	res2 = send_R(fd, bccSuccess,destuffed[2]);
 
 	return res2;
 }
