@@ -572,18 +572,18 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 
 int send_R(int fd, int success)
 {
-	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0};
+	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0, FLAG};
 	if(success)
 	{
 		if(ns == 0x00)
 		{
-			buf[3] = RR1;
-			buf[4] = RR1 ^ SENT_BY_RECEPTOR;
+			buf[2] = RR1;
+			buf[3] = RR1 ^ SENT_BY_RECEPTOR;
 		}
 		else if(ns == 0x40)
 		{
-			buf[3] = RR0;
-			buf[4] = RR0 ^ SENT_BY_RECEPTOR;
+			buf[2] = RR0;
+			buf[3] = RR0 ^ SENT_BY_RECEPTOR;
 		}
 		else
 			return -1;
@@ -591,13 +591,13 @@ int send_R(int fd, int success)
 	else{
 		if(ns == 0x00)
 		{
-			buf[3] = REJ1;
-			buf[4] = REJ1 ^ SENT_BY_RECEPTOR;
+			buf[2] = REJ1;
+			buf[3] = REJ1 ^ SENT_BY_RECEPTOR;
 		}
 		else if(ns == 0x40)
 		{
-			buf[3] = REJ0;
-			buf[4] = REJ0 ^ SENT_BY_RECEPTOR;
+			buf[2] = REJ0;
+			buf[3] = REJ0 ^ SENT_BY_RECEPTOR;
 		}
 		else
 			return -1;
