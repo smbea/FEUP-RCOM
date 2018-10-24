@@ -13,7 +13,27 @@
 
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
-unsigned char ns = 0x00;
+unsigned char ns = S0;
+unsigned char nr = 0x40;
+
+void genNextNS(){
+	if(ns == S0){
+		ns = S1;
+	}
+	else{
+		ns = S0;
+	}
+}
+
+void genNextNr(unsigned char received_ns){
+	if(received_ns == S0){
+		nr = RR1;
+	}
+	else{
+		ns = RR0;
+	}
+}
+
 
 int main(int argc, char **argv)
 {
@@ -55,8 +75,8 @@ int main(int argc, char **argv)
 	char teste[6] = {0x00, 0x04, 0x7e, 0x5d, 0x7d, 0x3e};
 	char teste1[255];
 	//if(fd > 0)
-		//llwrite(fd, teste, 6);
-		llread(fd, teste1);
+		llwrite(fd, teste, 6);
+		//llread(fd, teste1);
 	//llclose(fd, r_e_flag);
 
 	return 0;
@@ -231,20 +251,20 @@ void send_UA(int fd)
 	printf("sent UA packet\n");
 }
 
-int send_I(int fd, char *data, int length, unsigned char control, byte bcc2)
+int send_I(int fd, char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
-	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, control, SENT_BY_EMISSOR ^ control};
+	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
 	int j = 4;
 
 	for (i = 0; i < length; i++)
 	{
-		printf("%c\n", data[i]);
+		//printf("%c\n", data[i]);
 		buf[j] = data[i];
 		j++;
 	}
-	printf("stop");
+
 	buf[j++] = bcc2;
 	buf[j] = FLAG;
 	for(i = 0; i <= j; i++) {
@@ -436,9 +456,9 @@ int llwrite(int fd, char *buffer, int length)
 	conta = 1, send_flag = 1;
 
 	if (ns == 0x40)
-		initStateMachine(&st, EMISSOR_FLAG, RR0);
+		initStateMachine(&st, SENT_BY_RECEPTOR, RR0);
 	else if (ns == 0x00)
-		initStateMachine(&st, EMISSOR_FLAG, RR1);
+		initStateMachine(&st, SENT_BY_RECEPTOR, RR1);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -462,7 +482,7 @@ int llwrite(int fd, char *buffer, int length)
 		if (send_flag)
 		{
 			printf("writing frame\n");
-			res1 = send_I(fd, stuffedBuffer, newLength, ns, bcc2);
+			res1 = send_I(fd, stuffedBuffer, newLength, bcc2);
 			if (res1 < 0)
 				return -1;
 
@@ -475,22 +495,17 @@ int llwrite(int fd, char *buffer, int length)
 			res2 = read(fd, &teste, 1);
 			if (res2 > 0)
 			{
-				printf("%x\n", teste);
+				//printf("%x\n", teste);
 				exitSt = (*st.currentStateFunc)(&st, teste);
 			}
-			if (st.currentState == A_RCV)
-			{
-				if (exitSt == 0)
-					genNextNs();
-				else if (exitSt == 1)
-					send_flag = 1; //last packet had an error must be resent.
-			}
+
 			if (st.currentState == END || send_flag)
 				break;
 		}
 
 		if (st.currentState == END)
-			return res1;
+		{genNextNS();
+			return res1;}
 	}
 	return res1;
 }
@@ -570,31 +585,24 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 	return indexD;
 }
 
-int send_R(int fd, int success)
+int send_R(int fd, int success, unsigned char received_ns)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0, FLAG};
 	if(success)
 	{
-		if(ns == 0x00)
-		{
-			buf[2] = RR1;
-			buf[3] = RR1 ^ SENT_BY_RECEPTOR;
-		}
-		else if(ns == 0x40)
-		{
-			buf[2] = RR0;
-			buf[3] = RR0 ^ SENT_BY_RECEPTOR;
-		}
-		else
-			return -1;
+
+		genNextNr(received_ns);
+
+		buf[2] = nr;
+		buf[3] = nr ^ SENT_BY_RECEPTOR;
 	}
 	else{
-		if(ns == 0x00)
+		if(ns == S0)
 		{
 			buf[2] = REJ1;
 			buf[3] = REJ1 ^ SENT_BY_RECEPTOR;
 		}
-		else if(ns == 0x40)
+		else if(ns == S1)
 		{
 			buf[2] = REJ0;
 			buf[3] = REJ0 ^ SENT_BY_RECEPTOR;
@@ -608,7 +616,7 @@ int send_R(int fd, int success)
 
 	printf("Sent response packet\n");
 
-	return 0;
+return 0;
 }
 
 char* extractData(char* buffer, int length)
@@ -669,7 +677,7 @@ int llread(int fd, char *buffer)
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 	}
-	res2 = send_R(fd, bccSuccess);
+	res2 = send_R(fd, bccSuccess,buffer[2]);
 
 	return res2;
 }
