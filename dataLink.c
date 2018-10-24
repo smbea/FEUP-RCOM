@@ -13,27 +13,7 @@
 
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
-unsigned char ns = S0;
-unsigned char nr = 0x40;
-
-void genNextNS(){
-	if(ns == S0){
-		ns = S1;
-	} 
-	else{
-		ns = S0;
-	} 
-}
-
-void genNextNr(unsigned char received_ns){
-	if(received_ns == S0){
-		nr = RR1;
-	} 
-	else{
-		ns = RR0;
-	} 
-}
-
+unsigned char ns = 0x00;
 
 int main(int argc, char **argv)
 {
@@ -267,7 +247,7 @@ int send_I(int fd, char *data, int length, unsigned char control, byte bcc2)
 	printf("stop");
 	buf[j++] = bcc2;
 	buf[j] = FLAG;
-	for( i = 0; i <= j; i++) {
+	for(i = 0; i <= j; i++) {
 		printf("%d:%x\n", i, buf[i]);
 	}
 	res = write(fd, buf, j+1);
@@ -451,14 +431,14 @@ int llwrite(int fd, char *buffer, int length)
 {
 
 	char stuffedBuffer[256];
-	int res2 = 0, res1 = 0, exitSt = 0;
+	int res2 = 0, res1 = 0, exitSt = 0, newLength = length;
 	unsigned char teste, bcc2;
 	conta = 1, send_flag = 1;
 
-	if (ns == S1)
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR0);
-	else if (ns == S0)
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR1);
+	if (ns == 0x40)
+		initStateMachine(&st, EMISSOR_FLAG, RR0);
+	else if (ns == 0x00)
+		initStateMachine(&st, EMISSOR_FLAG, RR1);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -472,16 +452,17 @@ int llwrite(int fd, char *buffer, int length)
 	}
 
 	bcc2 = getBCC(buffer, length, EMISSOR_FLAG);
-	byteStuffing(buffer, length, stuffedBuffer);
+	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 	//talvez esta função só devesse ser chamada
 	//depois da confirmação do receptor (RR)
+	//genNextNs();
 
 	while (conta < 4)
 	{
 		if (send_flag)
 		{
 			printf("writing frame\n");
-			res1 = send_I(fd, stuffedBuffer, length, ns, bcc2);
+			res1 = send_I(fd, stuffedBuffer, newLength, ns, bcc2);
 			if (res1 < 0)
 				return -1;
 
@@ -500,7 +481,7 @@ int llwrite(int fd, char *buffer, int length)
 			if (st.currentState == A_RCV)
 			{
 				if (exitSt == 0)
-					genNextNS();
+					genNextNs();
 				else if (exitSt == 1)
 					send_flag = 1; //last packet had an error must be resent.
 			}
@@ -514,7 +495,15 @@ int llwrite(int fd, char *buffer, int length)
 	return res1;
 }
 
-void byteStuffing(char *buffer, int length, char *stuffedBuffer)
+void genNextNs()
+{
+	if (ns == 0x00)
+		ns = 0x40;
+	else
+		ns = 0x00;
+}
+
+void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength)
 {
 	/**
 	 * Compute the BCC
@@ -545,6 +534,7 @@ void byteStuffing(char *buffer, int length, char *stuffedBuffer)
 			stuffedBuffer[j] = buffer[i];
 		}
 	}
+	(*newLength) = j;
 }
 
 int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
@@ -580,24 +570,31 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 	return indexD;
 }
 
-int send_R(int fd, int success, unsigned char received_ns)
+int send_R(int fd, int success)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0};
 	if(success)
 	{
-		genNextNr(received_ns);
-
-		buf[3] = nr;
-		buf[4] = nr ^ SENT_BY_RECEPTOR;
-
+		if(ns == 0x00)
+		{
+			buf[3] = RR1;
+			buf[4] = RR1 ^ SENT_BY_RECEPTOR;
+		}
+		else if(ns == 0x40)
+		{
+			buf[3] = RR0;
+			buf[4] = RR0 ^ SENT_BY_RECEPTOR;
+		}
+		else
+			return -1;
 	}
 	else{
-		if(received_ns == S0)
+		if(ns == 0x00)
 		{
 			buf[3] = REJ1;
 			buf[4] = REJ1 ^ SENT_BY_RECEPTOR;
 		}
-		else if(received_ns == S1)
+		else if(ns == 0x40)
 		{
 			buf[3] = REJ0;
 			buf[4] = REJ0 ^ SENT_BY_RECEPTOR;
@@ -619,7 +616,7 @@ char* extractData(char* buffer, int length)
 	int index = 0;
 	char data[length];
 	int i;
-	for( i = 4; i < length + 4; i++)
+	for(i = 4; i < length + 4; i++)
 		data[index++] = buffer[i];
 
 	return data;
@@ -657,7 +654,7 @@ int llread(int fd, char *buffer)
 		if (st.currentState == END)
 			break;
 	}
-
+	//TODO: needs debbuging destuffing function not right
 	destuffedSize = byteDestuffing(buffer, i, destuffed);
 	int j;
 	for(j = 0; j < destuffedSize; j++)
@@ -672,7 +669,7 @@ int llread(int fd, char *buffer)
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 	}
-	res2 = send_R(fd, bccSuccess,destuffed[2]);
+	res2 = send_R(fd, bccSuccess);
 
 	return res2;
 }
