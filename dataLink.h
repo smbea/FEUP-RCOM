@@ -33,7 +33,7 @@ void open_emissor(int fd);
 void send_SET(int fd);
 void send_UA(int fd);
 int send_I(int fd, char *data, int length, unsigned char control, byte bcc2);
-void byteStuffing(char * buffer, int length, char * stuffedBuffer);
+void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength);
 byte getBCC(char* buffer, int length, int r_e_flag);
 int llclose(int fd, int r_e_flag);
 void genNextNs();
