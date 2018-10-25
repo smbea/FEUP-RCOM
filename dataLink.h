@@ -27,18 +27,19 @@ enum port{
 
 //functions
 int llopen(int port, int f);
+int llwrite(int fd, char * buffer, int length);
+int llread(int fd, char * buffer);
+int llclose(int fd, int r_e_flag);
 void open_receiver(int fd);
-void atende(int signo);
 void open_emissor(int fd);
 void send_SET(int fd);
 void send_UA(int fd);
 int send_I(int fd, char *data, int length, byte bcc2);
 void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength);
+int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer);
+void atende(int signo);
 byte getBCC(char* buffer, int length, int r_e_flag);
-int llclose(int fd, int r_e_flag);
 void genNextNs();
-int llwrite(int fd, char * buffer, int length);
-int llread(int fd, char * buffer);
-
+void genNextNr(unsigned char received_ns);
 
 #endif

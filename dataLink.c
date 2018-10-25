@@ -35,53 +35,6 @@ void genNextNr(unsigned char received_ns){
 }
 
 
-int main(int argc, char **argv)
-{
-	int r_e_flag = 0;
-	int port, fd;
-
-	if (argc < 3)
-	{
-		printf("Incorrect number of arguments\n");
-		exit(1);
-	}
-
-	//port
-	if (atoi(argv[1]) == 0)
-		port = COM1;
-	else if (atoi(argv[1]) == 1)
-		port = COM2;
-	else
-	{
-		printf("First argument invalid\n");
-		exit(1);
-	}
-
-	//
-	if (atoi(argv[2]) == 0)
-		r_e_flag = EMISSOR_FLAG;
-	else if (atoi(argv[2]) == 1)
-		r_e_flag = RECEIVER_FLAG;
-	else
-	{
-		printf("Second argument invalid\n");
-		exit(1);
-	}
-
-	fd = llopen(port, r_e_flag);
-
-	//fflush(NULL);
-
-	char teste[6] = {0x00, 0x04, 0x7e, 0x5d, 0x7d, 0x3e};
-	char teste1[255];
-	//if(fd > 0)
-		llwrite(fd, teste, 6);
-		//llread(fd, teste1);
-	//llclose(fd, r_e_flag);
-
-	return 0;
-}
-
 int llopen(int port, int r_e_flag)
 {
 	int fd;
@@ -219,22 +172,6 @@ void open_emissor(int fd)
 	}
 }
 
-/*void send_US(int fd, unsigned char US, unsigned char r_e_flag)
-{
-	unsigned char buf[5] = {FLAG, 0, US, 0, FLAG};
-
-	if (r_e_flag == SENT_BY_EMISSOR){
-			buf[1] = SENT_BY_EMISSOR;
-			buf[3] = SENT_BY_EMISSOR ^ US;
-
-	}else if (r_e_flag == SENT_BY_RECEPTOR){
-			buf[1] = SENT_BY_RECEPTOR;
-			buf[3] = SENT_BY_RECEPTOR ^ US;
-	}
-
-	write(fd, buf, sizeof(buf));
-	printf("sent US packet\n");
-}*/
 
 void send_SET(int fd)
 {
