@@ -5,12 +5,26 @@
 #include "dataLink.h"
 
 struct applicationLayer {
-  int port_fd; /*Descritor correspondente à porta série*/
+  int fd; /*Descritor correspondente à porta série*/
   int status; /*TRANSMITTER | RECEIVER*/
-  int send_fd;
 };
 
 struct applicationLayer application;
+
+enum packetControl{
+  fileSizeIndicator = 0,
+  fileNameIndicator = 1,
+  start = 2,
+  end = 3
+};
+
+struct sendFile{
+  int fd;
+  int fileSize;
+  char * fileName;
+};
+
+struct sendFile sendFile;
 
 enum possibleStatus{
   TRANSMITTER = 0,

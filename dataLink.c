@@ -197,7 +197,7 @@ int send_I(int fd, char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
-	unsigned char buf[255] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
+	unsigned char buf[512] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
 	int j = 4;
 
 	for (i = 0; i < length; i++)
