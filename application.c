@@ -44,7 +44,7 @@ int main(int argc, char** argv){
 	//file
 	char * send_file;
 	send_file = argv[3];
-	if(status = TRANSMITTER) application.send_fd = open(send_file,O_RDWR);
+	if(status == TRANSMITTER) application.send_fd = open(send_file,O_RDWR);
 	else application.send_fd = open(send_file,O_WRONLY);
 
 	if (application.send_fd < 0)
