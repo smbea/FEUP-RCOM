@@ -35,7 +35,7 @@ void genNextNr(unsigned char received_ns){
 }
 
 
-int llopen(int port, int r_e_flag)
+int llopen(int port, int status)
 {
 	int fd;
 	char *portName;
@@ -81,9 +81,9 @@ int llopen(int port, int r_e_flag)
 
 	printf("New termios structure set\n");
 
-	if (r_e_flag == RECEIVER_FLAG)
+	if (status == RECEIVER_FLAG)
 		open_receiver(fd);
-	else if (r_e_flag == EMISSOR_FLAG)
+	else if (status == EMISSOR_FLAG)
 		open_emissor(fd);
 
 	return fd;
@@ -218,16 +218,16 @@ int send_I(int fd, char *data, int length, byte bcc2)
 	return -1;
 }
 
-int send_DISC(int fd, int r_e_flag)
+int send_DISC(int fd, int status)
 {
 	unsigned char buf[5] = {FLAG, 0, DISC, 0, FLAG};
 
-	if (r_e_flag == EMISSOR_FLAG)
+	if (status == EMISSOR_FLAG)
 	{
 		buf[1] = SENT_BY_EMISSOR;
 		buf[3] = SENT_BY_EMISSOR ^ DISC;
 	}
-	else if (r_e_flag == RECEIVER_FLAG)
+	else if (status == RECEIVER_FLAG)
 	{
 		buf[1] = SENT_BY_RECEPTOR;
 		buf[3] = SENT_BY_RECEPTOR ^ DISC;
@@ -247,7 +247,7 @@ int send_DISC(int fd, int r_e_flag)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd, int r_e_flag)
+void close_receiver(int fd, int status)
 {
 
 	int res;
@@ -289,7 +289,7 @@ void close_receiver(int fd, int r_e_flag)
 		{
 
 			printf("writing message\n");
-			send_DISC(fd, r_e_flag); //sends DISC flag back to the emissor
+			send_DISC(fd, status); //sends DISC flag back to the emissor
 
 			alarm(3); // activa alarme de 3s
 			printf("sent alarm\n");
@@ -316,7 +316,7 @@ void close_receiver(int fd, int r_e_flag)
 	printf("Communication closed by timeout. Last UA not received.\n");
 }
 
-void close_emissor(int fd, int r_e_flag)
+void close_emissor(int fd, int status)
 {
 	int res;
 
@@ -341,7 +341,7 @@ void close_emissor(int fd, int r_e_flag)
 		{
 
 			printf("writing message\n");
-			send_DISC(fd, r_e_flag);
+			send_DISC(fd, status);
 
 			alarm(3); // activa alarme de 3s
 			printf("sent alarm\n");
@@ -368,13 +368,13 @@ void close_emissor(int fd, int r_e_flag)
 	}
 }
 
-byte getBCC(char* buffer, int length, int r_e_flag)
+byte getBCC(char* buffer, int length, int status)
 {
 		byte bcc = 0;
 		int i;
-		if(r_e_flag == EMISSOR_FLAG)
+		if(status == EMISSOR_FLAG)
 			i = 0;
-		else if(r_e_flag == RECEIVER_FLAG){
+		else if(status == RECEIVER_FLAG){
 			i = 4;
 			length -= 2;
 		}
@@ -620,15 +620,15 @@ int llread(int fd, char *buffer)
 }
 
 
-int llclose(int fd, int r_e_flag)
+int llclose(int fd, int status)
 {
 	printf("\nLLCLOSE\n");
 	conta = 1, send_flag = 1;
 
-	if (r_e_flag == RECEIVER_FLAG)
-		close_receiver(fd, r_e_flag);
-	else if (r_e_flag == EMISSOR_FLAG)
-		close_emissor(fd, r_e_flag);
+	if (status == RECEIVER_FLAG)
+		close_receiver(fd, status);
+	else if (status == EMISSOR_FLAG)
+		close_emissor(fd, status);
 
 	fflush(NULL);
 

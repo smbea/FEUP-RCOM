@@ -1,12 +1,19 @@
 #include "application.h"
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
 
 int main(int argc, char** argv){
 
-	int r_e_flag = 0;
-	int port, fd;
+	int port;
 
-	if (argc < 3)
+	if (argc < 4)
 	{
 		printf("Incorrect number of arguments\n");
 		exit(1);
@@ -23,27 +30,25 @@ int main(int argc, char** argv){
 		exit(1);
 	}
 
-	//
+	//status
 	if (atoi(argv[2]) == 0)
-		r_e_flag = EMISSOR_FLAG;
+		status = TRANSMITTER;
 	else if (atoi(argv[2]) == 1)
-		r_e_flag = RECEIVER_FLAG;
+		status = RECEIVER;
 	else
 	{
 		printf("Second argument invalid\n");
 		exit(1);
 	}
 
-	fd = llopen(port, r_e_flag);
+	//file
+	char * send_file;
+	send_file = argv[3];
+	if(status = TRANSMITTER) application.send_fd = open(send_file,O_RDWR);
+	else application.send_fd = open(send_file,O_WRONLY);
 
-	//fflush(NULL);
 
-	char teste[6] = {0x00, 0x04, 0x7e, 0x5d, 0x7d, 0x3e};
-	char teste1[255];
-	//if(fd > 0)
-		llwrite(fd, teste, 6);
-		//llread(fd, teste1);
-	//llclose(fd, r_e_flag);
+	application.send_fd = llopen(port, status);
 
 	return 0;
 

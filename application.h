@@ -4,12 +4,17 @@
 
 #include "dataLink.h"
 
-struct application{
-  int seriesPortFd;
-  int status;
+struct applicationLayer {
+  int port_fd; /*Descritor correspondente à porta série*/
+  int status; /*TRANSMITTER | RECEIVER*/
+  int send_fd;
 };
 
-enum status{
+struct applicationLayer application;
+
+enum possibleStatus{
   TRANSMITTER = 0,
-  RECEIVER = 0
+  RECEIVER = 1
 };
+
+int status;
