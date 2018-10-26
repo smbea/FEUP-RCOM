@@ -16,12 +16,13 @@ int send_flag = 1, conta = 1;
 unsigned char ns = S0;
 unsigned char nr = 0x40;
 
-void genNextNS(){
-	if(ns == S0){
-		ns = S1;
+
+void genNextNs(){
+	if(dataLink.sequenceNumber == 0){
+		ns = S0;
 	}
 	else{
-		ns = S0;
+		ns = S1;
 	}
 }
 
@@ -39,6 +40,10 @@ int llopen(int port, int status)
 {
 	int fd;
 	char *portName;
+
+	dataLink.baudRate = B38400;
+	dataLink.timeout = 3;
+	dataLink.numTransmissions=3;
 
 	if (port == COM1)
 		portName = "/dev/ttyS0";
@@ -61,7 +66,7 @@ int llopen(int port, int status)
 	}
 
 	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+	newtio.c_cflag = dataLink.baudRate | CS8 | CLOCAL | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
 
@@ -139,7 +144,7 @@ void open_emissor(int fd)
 
 	unsigned char teste;
 
-	while (conta < 4)
+	while (conta <= dataLink.numTransmissions)
 
 	{
 		if (send_flag)
@@ -148,7 +153,7 @@ void open_emissor(int fd)
 			printf("writing message\n");
 			send_SET(fd);
 
-			alarm(3); // activa alarme de 3s
+			alarm(dataLink.timeout); // activa alarme de 3s
 			printf("sent alarm\n");
 			send_flag = 0;
 		}
@@ -283,7 +288,7 @@ void close_receiver(int fd, int status)
 
 	unsigned char teste;
 
-	while (conta < 4)
+	while (conta <= dataLink.numTransmissions)
 	{ //4 tentativas de alarme
 		if (send_flag)
 		{
@@ -291,7 +296,7 @@ void close_receiver(int fd, int status)
 			printf("writing message\n");
 			send_DISC(fd, status); //sends DISC flag back to the emissor
 
-			alarm(3); // activa alarme de 3s
+			alarm(dataLink.timeout); // activa alarme de 3s
 			printf("sent alarm\n");
 			send_flag = 0;
 		}
@@ -335,7 +340,7 @@ void close_emissor(int fd, int status)
 
 	unsigned char teste;
 
-	while (conta < 4)
+	while (conta <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
@@ -343,7 +348,7 @@ void close_emissor(int fd, int status)
 			printf("writing message\n");
 			send_DISC(fd, status);
 
-			alarm(3); // activa alarme de 3s
+			alarm(dataLink.timeout); // activa alarme de 3s
 			printf("sent alarm\n");
 			send_flag = 0;
 		}
@@ -389,7 +394,8 @@ int llwrite(int fd, char *buffer, int length)
 
 	char stuffedBuffer[256];
 	int res2 = 0, res1 = 0, exitSt = 0, newLength = length;
-	unsigned char teste, bcc2;
+	unsigned char bcc2;
+	int i = 0;
 	conta = 1, send_flag = 1;
 
 	if (ns == 0x40)
@@ -410,11 +416,8 @@ int llwrite(int fd, char *buffer, int length)
 
 	bcc2 = getBCC(buffer, length, EMISSOR_FLAG);
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
-	//talvez esta função só devesse ser chamada
-	//depois da confirmação do receptor (RR)
-	//genNextNs();
 
-	while (conta < 4)
+	while (conta <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
@@ -423,17 +426,18 @@ int llwrite(int fd, char *buffer, int length)
 			if (res1 < 0)
 				return -1;
 
-			alarm(3); // activa alarme de 3s
+			alarm(dataLink.timeout); // activa alarme de 3s
 			send_flag = 0;
 		}
 
 		while (1)
 		{
-			res2 = read(fd, &teste, 1);
+			res2 = read(fd, dataLink.frame, 1);
 			if (res2 > 0)
 			{
 				//printf("%x\n", teste);
-				exitSt = (*st.currentStateFunc)(&st, teste);
+				exitSt = (*st.currentStateFunc)(&st, dataLink.frame[i]);
+				i++;
 			}
 
 			if (st.currentState == END || send_flag)
@@ -441,19 +445,13 @@ int llwrite(int fd, char *buffer, int length)
 		}
 
 		if (st.currentState == END)
-		{genNextNS();
-			return res1;}
+		{	genNextNs();
+			return res1;
+		}
 	}
 	return res1;
 }
 
-void genNextNs()
-{
-	if (ns == 0x00)
-		ns = 0x40;
-	else
-		ns = 0x00;
-}
 
 void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength)
 {
@@ -599,21 +597,26 @@ int llread(int fd, char *buffer)
 		if (st.currentState == END)
 			break;
 	}
-	//TODO: needs debbuging destuffing function not right
+	
+	
 	destuffedSize = byteDestuffing(buffer, i, destuffed);
-	int j;
+
+	/*int j;
+
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("DB: %x\n", destuffed[j]);
-	}
-	unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
+	}*/
+
+	/*unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
 	printf("BCC: %x\n", x);
 	printf("BCC recieved: %x\n", destuffed[destuffedSize - 2]);
 	if(getBCC(destuffed, destuffedSize , RECEIVER_FLAG) == destuffed[destuffedSize - 2])
 	{
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}
+	}*/
+	
 	res2 = send_R(fd, bccSuccess,buffer[2]);
 
 	return res2;
