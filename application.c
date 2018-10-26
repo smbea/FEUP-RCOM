@@ -47,6 +47,12 @@ int main(int argc, char** argv){
 	if(status = TRANSMITTER) application.send_fd = open(send_file,O_RDWR);
 	else application.send_fd = open(send_file,O_WRONLY);
 
+	if (application.send_fd < 0)
+	{
+		perror(send_file);
+		exit(-1);
+	}
+
 
 	application.send_fd = llopen(port, status);
 
