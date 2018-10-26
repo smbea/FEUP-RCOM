@@ -18,3 +18,12 @@ enum possibleStatus{
 };
 
 int status;
+
+
+/**
+ * @brief Gets the file size in bytes
+ * 
+ * @param fd The file descriptor of the file
+ * @return int Returns -1 upon errors and prints an appropriate message, otherwise returns the file size in bytes
+ */
+int getFileSize(int fd);

@@ -59,3 +59,15 @@ int main(int argc, char** argv){
 	return 0;
 
 }
+
+
+int getFileSize(int fd) {
+	struct stat statbuf;
+	
+	if(fstat(fd, &statbuf) != 0) {
+		perror(NULL);
+		return -1;
+	}
+
+	return statbuf.st_size;
+}
