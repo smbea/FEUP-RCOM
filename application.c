@@ -8,6 +8,41 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <math.h>
+
+int log2(int x)
+{
+	return (int)(log10(x)/log10(2.0) + 0.5);
+}
+
+
+char* generateControlPacket(int start_end_flag, char* file_name, char* file_size)
+{
+	int i = 0, j = 0;
+
+	char* packet;
+
+	if(start_end_flag == START)
+		packet[0] = 0x02;
+	else if(start_end_flag == END)
+		packet[0] = 0x03;
+
+	i++;
+
+	packet[i++] = FILE_SIZE;
+	packet[i++] = (char)strlen(file_size);
+
+	for(j = 0; j < strlen(file_size); j++)
+		packet[i++] = file_size[j];
+
+	packet[i++] = FILE_NAME;
+	packet[i++] = (char)strlen(file_name);
+
+	for(j = 0; j < strlen(file_name); j++)
+		packet[i++] = file_name[j];
+
+	return packet;
+}
 
 int main(int argc, char** argv){
 
