@@ -52,9 +52,6 @@ int generateControlPacket(int start_end_flag, char* file_name, char* file_size, 
 	for(k = 3; k-- > 0 ; k++)
 		packet[k] = (s>>(sendFile.fileSize*8))&0xff;
 
-	for(j = 0; j < strlen(file_size); j++)
-		packet[i++] = file_size[j];
-
 	packet[i++] = fileNameIndicator;
 	packet[i++] = (char)strlen(sendFile.fileName); 
 
