@@ -436,7 +436,7 @@ int llwrite(int fd, char *buffer, int length)
 			if (res2 > 0)
 			{
 				//printf("%x\n", teste);
-				exitSt = (*st.currentStateFunc)(&st, dataLink.frame[i]);
+				(*st.currentStateFunc)(&st, dataLink.frame[i]);
 				i++;
 			}
 
