@@ -12,7 +12,6 @@
 
 int generateDataPacket(char sequenceNumber, char* data, char* packet){
 
-
 	packet[0] = 0x01;
 	packet[1] = sequenceNumber % 255;
 	int dataSize = sizeof(data);
@@ -31,41 +30,30 @@ int generateDataPacket(char sequenceNumber, char* data, char* packet){
 
 
 
-int generateControlPacket(int start_end_flag, char* file_size, char* packet)
+int generateControlPacket(int start_end_flag, char* file_name, char* file_size, char* packet)
 {
-
-		packet = malloc(500);
 	int i = 0, j = 0;
-	char * temp;
 
-//start or end
+
 	if(start_end_flag == start)
-		sprintf(temp, "%d",start);
+		packet[0] = APP_START;
 	else if(start_end_flag == end)
-		sprintf(temp, "%d",end);
+		packet[0] = APP_END;
 
-		strcat(packet,temp);
-	 printf("1. %s -%s\n",temp,packet);
 	i++;
 
-//filesizeindicator
-	 sprintf(temp, "%d",fileSizeIndicator);
-	 strcat(packet,temp);
-	printf("2. %s -%s\n",temp,packet);
+	packet[i++] = fileSizeIndicator;
+	packet[i++] = (char)strlen(file_size); //NOPE
 
-//file size
+	for(j = 0; j < strlen(file_size); j++)
+		packet[i++] = file_size[j];
 
-		strcat(packet,file_size);
-		printf("3. %s -%s\n", file_size,packet);
+	packet[i++] = fileNameIndicator;
+	packet[i++] = (char)strlen(file_name); //NOPE
 
+	for(j = 0; j < strlen(file_name); j++)
+		packet[i++] = file_name[j];
 
-//file name
-		sprintf(temp, "%d",fileNameIndicator);
- 	 	strcat(packet,temp);
-
-//fileName
-	strcat(packet, sendFile.fileName);
-		printf("4. %s\n", packet);
 	return i;
 }
 
@@ -118,22 +106,22 @@ int main(int argc, char** argv){
 	application.fd = llopen(port, status);
 
 	//testing
-
+	/*
 	char fs[4];
-	sprintf(fs, "%d", sendFile.fileSize);
-	//printf("packet size: %d\n",fs[0]);
+	sprintf(fs, "%d", file_size);
+	*/
 
-
+	/*
 	char packet[255];
-	int packet_size = generateControlPacket(0x02, fs, packet);
+	int packet_size = generateControlPacket(0x02, "teste1", fs, packet);
 
 	int k;
-	//printf("packet:\n");
+	printf("packet:");
 	for(k= 0; k < packet_size; k++)
-		//printf("%x\n", packet[k]);
+		printf("%x\n", packet[k]);
 
 	llwrite(application.fd, packet, packet_size);
-
+	*/
 
 	return 0;
 
@@ -141,7 +129,7 @@ int main(int argc, char** argv){
 
 int getFileSize(int fd) {
 	struct stat statbuf;
-
+	
 	if(fstat(fd, &statbuf) != 0) {
 		perror(NULL);
 		return -1;
