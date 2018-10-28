@@ -376,7 +376,7 @@ void close_emissor(int fd, int status)
 byte getBCC(char* buffer, int length, int status)
 {
 		byte bcc = 0;
-		int i;
+		int i = 0;
 		if(status == EMISSOR_FLAG)
 			i = 0;
 		else if(status == RECEIVER_FLAG){
@@ -554,7 +554,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 return 0;
 }
 
-char* extractData(char* buffer, int length)
+char * extractData(char * buffer, int length)
 {
 	int index = 0;
 	char data[length];

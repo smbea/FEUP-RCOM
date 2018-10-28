@@ -33,6 +33,12 @@ enum possibleStatus{
 
 int status;
 
+enum applicationPackets{
+  APP_START = 0x02,
+  APP_DATA = 0x01,
+  APP_END = 0x03
+};
+
 
 /**
  * @brief Gets the file size in bytes

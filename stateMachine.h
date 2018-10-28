@@ -42,7 +42,7 @@ byte bccCheck;
 // and a function pointer that processes input for that state
 typedef struct stateMachine {
 	State currentState;
-	int (*currentStateFunc)(void*, byte);
+	int (*currentStateFunc)(struct stateMachine*, byte);
 	char message[255];
 	byte prev;
 	int index;
@@ -64,5 +64,4 @@ int stateDATA(stateMachine *st, byte input);
 int stateBCC1(stateMachine *st, byte input);
 int stateBCC(stateMachine *st, byte input);
 int stateEND_FLAG(stateMachine *st, byte input);
-byte destuffByte(byte input, byte prevInput);
 #endif

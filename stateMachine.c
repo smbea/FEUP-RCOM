@@ -98,15 +98,15 @@ int stateProtection(stateMachine *st, byte input) {
 	if(input == FLAG) {
 		printf("Got flag, back to flag state\n");
 		st->currentState = FLAG;
-		st->currentStateFunc = stateFlag;
+		st->currentStateFunc = &stateFlag;
 	} else if (input == (currentA^currentType)) {
 
 			printf("Transitioned to BCC state\n");
 			st->currentState = BCC;
-			st->currentStateFunc = stateBCC;
+			st->currentStateFunc = &stateBCC;
 	} else {
 		st->currentState = START;
-		st->currentStateFunc = stateStart;
+		st->currentStateFunc = &stateStart;
 	}
 
 	return 0;
@@ -120,19 +120,18 @@ int stateBCC(stateMachine *st, byte input) {
 		if(input == FLAG) st->currentState = END;
 		else {
 		st->currentState = START;
-		st->currentStateFunc = stateStart;
+		st->currentStateFunc = &stateStart;
 		}
 	}else{
 		st->currentState = DATA;
-		st->currentStateFunc = stateDATA;
+		st->currentStateFunc = &stateDATA;
 	}
+	return 0;
 }
 
 
 
 int stateDATA(stateMachine *st, byte input) {
-
-	unsigned char temp;
 
 	if(st->currentState != DATA)
 		return -1;
@@ -142,33 +141,10 @@ int stateDATA(stateMachine *st, byte input) {
 		return 1; //Reached flag wihtout finding BCC -> there was an error(REJ)
 	}
 
-	/*if(bccCheck == input){ //found BCC -> no errors detected
-		st->currentState = FLAG_END;
-		st->currentStateFunc = stateEND_FLAG;
-	}
-	else
-	{
-		temp = destuffByte(input, st->prev);
-		st->prev = input;
-		if(temp != NULL){
-			bccCheck = bccCheck ^ temp;
-			st->message[st->index++] = temp;
-		}
-	}*/
+
 	return 0;
 }
 
-byte destuffByte(byte input, byte prevInput)
-{
-	if(input == ESCAPE)
-		return NULL;
-	if(prevInput != ESCAPE)
-		return input;
-	else if(input == (FLAG ^ 0x20))
-		return FLAG;
-	else if(input == (ESCAPE ^ 0x20))
-		return ESCAPE;
-}
 
 int stateEND_FLAG(stateMachine *st, byte input){
 
