@@ -570,7 +570,6 @@ int llread(int fd, char *buffer)
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
 	char destuffed[255];
-	int exitSt = 0;
 	int i =0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
@@ -591,7 +590,7 @@ int llread(int fd, char *buffer)
 		if (res > 0)
 		{
 			printf("%x\n", buffer[i]);
-			exitSt = (*st.currentStateFunc)(&st, buffer[i]);
+			(*st.currentStateFunc)(&st, buffer[i]);
 			i++;
 		}
 		if (st.currentState == END)
@@ -601,12 +600,14 @@ int llread(int fd, char *buffer)
 	
 	destuffedSize = byteDestuffing(buffer, i, destuffed);
 
-	/*int j;
+	
+
+	int j;
 
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("DB: %x\n", destuffed[j]);
-	}*/
+	}
 
 	/*unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
 	printf("BCC: %x\n", x);
