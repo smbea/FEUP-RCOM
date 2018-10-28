@@ -10,10 +10,10 @@
 #include <signal.h>
 
 
-int generateDataPacket(char sequenceNumber, char* data, char* packet){
+int generateDataPacket(char* data, char* packet){
 
 	packet[0] = 0x01;
-	packet[1] = sequenceNumber % 255;
+	packet[1] = application.sequenceNumber % 255;
 	int dataSize = sizeof(data);
 	int l2 = dataSize / 256;
 	int l1 = dataSize % 256;
@@ -111,16 +111,27 @@ int main(int argc, char** argv){
 	//llopen
 	application.fd = llopen(port, status);
 
-	//testing
-	char packet[255];
-	int packet_size = generateControlPacket(start, packet);
-
-	llwrite(application.fd, packet, packet_size);
-
+	if(status == TRANSMITTER) sendData();
 
 	return 0;
 
 }
+int sendData(){
+	sendControlPacket(start);
+	return 0;
+}
+
+int readData(){
+	return 0;
+}
+
+void sendControlPacket(int start_end_flag){
+	char packet[260];
+	int packet_size = generateControlPacket(start, packet);
+
+	llwrite(application.fd, packet, packet_size);
+}
+
 
 int getFileSize(int fd) {
 	struct stat statbuf;

@@ -7,6 +7,7 @@
 struct applicationLayer {
   int fd; /*Descritor correspondente à porta série*/
   int status; /*TRANSMITTER | RECEIVER*/
+  int sequenceNumber;
 };
 
 struct applicationLayer application;
@@ -47,3 +48,8 @@ enum applicationPackets{
  * @return int Returns -1 upon errors and prints an appropriate message, otherwise returns the file size in bytes
  */
 int getFileSize(int fd);
+void sendControlPacket(int start_end_flag);
+int generateControlPacket(int start_end_flag, char* packet);
+int sendData();
+int readData();
+void sendControlPacket(int start_end_flag);

@@ -197,7 +197,7 @@ int send_I(int fd, char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
-	unsigned char buf[512] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
+	unsigned char buf[260] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
 	int j = 4;
 
 	for (i = 0; i < length; i++)
@@ -392,7 +392,7 @@ byte getBCC(char* buffer, int length, int status)
 int llwrite(int fd, char *buffer, int length)
 {
 
-	char stuffedBuffer[256];
+	char stuffedBuffer[260];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	int i = 0;
@@ -554,7 +554,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 return 0;
 }
 
-char * extractData(char * buffer, int length)
+/*char * extractData(char * buffer, int length)
 {
 	int index = 0;
 	char data[length];
@@ -563,7 +563,7 @@ char * extractData(char * buffer, int length)
 		data[index++] = buffer[i];
 
 	return data;
-}
+}*/
 
 int llread(int fd, char *buffer)
 {
