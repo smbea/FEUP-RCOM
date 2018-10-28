@@ -69,7 +69,7 @@ int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-		printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
+		//printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
 
 	if(input == currentType) {
 		printf("Transitioned to c_rcv state\n");

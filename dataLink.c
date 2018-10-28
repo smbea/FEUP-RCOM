@@ -108,7 +108,7 @@ void open_receiver(int fd)
 		{
 			(*st.currentStateFunc)(&st, frame);
 
-			printf("received: %X\n", frame);
+			//printf("received: %X\n", frame);
 		}
 	}
 
@@ -163,7 +163,7 @@ void open_emissor(int fd)
 			res = read(fd, &teste, 1);
 			if (res > 0)
 			{
-				printf("%x\n", teste);
+				//printf("%x\n", teste);
 				(*st.currentStateFunc)(&st, teste);
 			}
 			if (st.currentState == END || send_flag)
@@ -393,7 +393,7 @@ int llwrite(int fd, char *buffer, int length)
 {
 
 	char stuffedBuffer[256];
-	int res2 = 0, res1 = 0, exitSt = 0, newLength = length;
+	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	int i = 0;
 	conta = 1, send_flag = 1;
