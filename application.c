@@ -30,7 +30,7 @@ int generateDataPacket(char sequenceNumber, char* data, char* packet){
 
 
 
-int generateControlPacket(int start_end_flag, char* file_name, char* file_size, char* packet)
+int generateControlPacket(int start_end_flag, char* packet)
 {
 	int i = 0, j = 0;
 
@@ -40,23 +40,24 @@ int generateControlPacket(int start_end_flag, char* file_name, char* file_size, 
 	else if(start_end_flag == end)
 		packet[0] = APP_END;
 
-	i++;
 
-
-	packet[i++] = fileSizeIndicator;
-	packet[i++] = sizeof(sendFile.fileSize);
+	packet[++i] = fileSizeIndicator;
+	packet[++i] = sizeof(sendFile.fileSize);
 
 	int s = sizeof(sendFile.fileSize);
-	int k;
 
-	for(k = 3; k-- > 0 ; k++)
-		packet[k] = (s>>(sendFile.fileSize*8))&0xff;
+	for(i = 0; s-- > 0 ; i++){
+		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
+	}
 
-	packet[i++] = fileNameIndicator;
-	packet[i++] = (char)strlen(sendFile.fileName); 
+	packet[++i] = fileNameIndicator;
+	packet[++i] = (char)strlen(sendFile.fileName);
 
-	for(j = 0; j < strlen(file_name); j++)
-		packet[i++] = file_name[j];
+	for(j = 0; j < strlen(sendFile.fileName); j++)
+		packet[++i] = sendFile.fileName[j];
+
+		for(j = 0; j < i; j++)
+			printf("%x\n", packet[j]);
 
 	return i;
 }
@@ -111,22 +112,11 @@ int main(int argc, char** argv){
 	application.fd = llopen(port, status);
 
 	//testing
-	/*
-	char fs[4];
-	sprintf(fs, "%d", file_size);
-	*/
-
-	/*
 	char packet[255];
-	int packet_size = generateControlPacket(0x02, "teste1", fs, packet);
-
-	int k;
-	printf("packet:");
-	for(k= 0; k < packet_size; k++)
-		printf("%x\n", packet[k]);
+	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
-	*/
+
 
 	return 0;
 
@@ -134,7 +124,7 @@ int main(int argc, char** argv){
 
 int getFileSize(int fd) {
 	struct stat statbuf;
-	
+
 	if(fstat(fd, &statbuf) != 0) {
 		perror(NULL);
 		return -1;
