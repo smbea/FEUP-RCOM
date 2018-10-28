@@ -42,20 +42,28 @@ int generateControlPacket(int start_end_flag, char* file_name, char* file_size, 
 
 	i++;
 
+
 	packet[i++] = fileSizeIndicator;
-	packet[i++] = (char)strlen(file_size); //NOPE
+	packet[i++] = sizeof(sendFile.fileSize);
+
+	int s = sizeof(sendFile.fileSize);
+	int k;
+
+	for(k = 3; k-- > 0 ; k++)
+		packet[k] = (s>>(sendFile.fileSize*8))&0xff;
 
 	for(j = 0; j < strlen(file_size); j++)
 		packet[i++] = file_size[j];
 
 	packet[i++] = fileNameIndicator;
-	packet[i++] = (char)strlen(file_name); //NOPE
+	packet[i++] = (char)strlen(sendFile.fileName); 
 
 	for(j = 0; j < strlen(file_name); j++)
 		packet[i++] = file_name[j];
 
 	return i;
 }
+
 
 int main(int argc, char** argv){
 
