@@ -51,13 +51,13 @@ int generateControlPacket(int start_end_flag, char* file_size, char* packet)
 //filesizeindicator
 	 sprintf(temp, "%d",fileSizeIndicator);
 	 strcat(packet,temp);
-	printf("1. %s -%s\n",temp,packet);
+	printf("2. %s -%s\n",temp,packet);
 
 //file size
-		strcat(packet,file_size);
-		printf("1. %s -%s\n", file_size,packet);
 
-		packet[i++] = fileNameIndicator;
+		strcat(packet,file_size);
+		printf("3. %s -%s\n", file_size,packet);
+
 
 //file name
 		sprintf(temp, "%d",fileNameIndicator);
@@ -65,7 +65,7 @@ int generateControlPacket(int start_end_flag, char* file_size, char* packet)
 
 //fileName
 	strcat(packet, sendFile.fileName);
-		printf("3. %s\n", packet);
+		printf("4. %s\n", packet);
 	return i;
 }
 
