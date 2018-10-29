@@ -609,14 +609,14 @@ int llread(int fd, char *buffer)
 		printf("DB: %x\n", destuffed[j]);
 	}
 
-	/*unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
+	unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
 	printf("BCC: %x\n", x);
 	printf("BCC recieved: %x\n", destuffed[destuffedSize - 2]);
 	if(getBCC(destuffed, destuffedSize , RECEIVER_FLAG) == destuffed[destuffedSize - 2])
 	{
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}*/
+	}
 	
 	res2 = send_R(fd, bccSuccess,buffer[2]);
 
