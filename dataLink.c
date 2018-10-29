@@ -525,12 +525,12 @@ int send_R(int fd, int success, unsigned char received_ns)
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0, FLAG};
 	if(success)
 	{
-		printf("nr: %d, %x, %x\n",nr, buf[2], buf[3]);
-
 		genNextNr(received_ns);
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_RECEPTOR;
+
+		printf("nr: %d, %x, %x\n",nr, buf[2], buf[3]);
 	}
 	else{
 		if(ns == S0)
