@@ -399,9 +399,9 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	conta = 1, send_flag = 1;
 
 	if (ns == 0x40)
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR0);
+		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 	else
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR1);
+		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
 	printf("ns : %x", ns);	
 
@@ -524,24 +524,24 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 
 int send_R(int fd, int success, unsigned char received_ns)
 {
-	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0, FLAG};
+	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, 0, 0, FLAG};
 	if(success)
 	{
 		genNextNr(received_ns);
 
 		buf[2] = nr;
-		buf[3] = nr ^ SENT_BY_RECEPTOR;
+		buf[3] = nr ^ SENT_BY_EMISSOR;
 	}
 	else{
 		if(ns == S0)
 		{
 			buf[2] = REJ1;
-			buf[3] = REJ1 ^ SENT_BY_RECEPTOR;
+			buf[3] = REJ1 ^ SENT_BY_EMISSOR;
 		}
 		else if(ns == S1)
 		{
 			buf[2] = REJ0;
-			buf[3] = REJ0 ^ SENT_BY_RECEPTOR;
+			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
 		else
 			return -1;
