@@ -39,7 +39,7 @@ void genNextNr(unsigned char received_ns){
 int llopen(int port, int status)
 {
 	int fd;
-	char *portName;
+	unsigned char *portName;
 
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
@@ -193,7 +193,7 @@ void send_UA(int fd)
 	printf("sent UA packet\n");
 }
 
-int send_I(int fd, char *data, int length, byte bcc2)
+int send_I(int fd, unsigned char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
@@ -373,7 +373,7 @@ void close_emissor(int fd, int status)
 	}
 }
 
-byte getBCC(char* buffer, int length, int status)
+byte getBCC(unsigned char* buffer, int length, int status)
 {
 		byte bcc = 0;
 		int i = 0;
@@ -389,10 +389,10 @@ byte getBCC(char* buffer, int length, int status)
 		return bcc;
 }
 
-int llwrite(int fd, char *buffer, int length)
+int llwrite(int fd, unsigned char *buffer, int length)
 {
 
-	char stuffedBuffer[260];
+	unsigned char stuffedBuffer[260];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	int i = 0;
@@ -453,7 +453,7 @@ int llwrite(int fd, char *buffer, int length)
 }
 
 
-void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength)
+void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength)
 {
 	/**
 	 * Compute the BCC
@@ -565,11 +565,11 @@ return 0;
 	return data;
 }*/
 
-int llread(int fd, char *buffer)
+int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	char destuffed[255];
+	unsigned char destuffed[255];
 	int i =0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);

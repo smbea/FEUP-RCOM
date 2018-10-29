@@ -10,7 +10,7 @@
 #include <signal.h>
 
 //untested
-int generateDataPacket(char* data, int size, char* packet){
+int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 
 	int h;
 	int index = 3;
@@ -20,8 +20,8 @@ int generateDataPacket(char* data, int size, char* packet){
 	packet[0] = 0x01;
 	packet[1] = application.sequenceNumber % 255;
 	
-	packet[2] = (char)l2;
-	packet[3] = (char)l1;
+	packet[2] = (unsigned char)l2;
+	packet[3] = (unsigned char)l1;
 
 	for(h = 0; h < size; h++)
 	{
@@ -32,7 +32,7 @@ int generateDataPacket(char* data, int size, char* packet){
 
 
 
-int generateControlPacket(int start_end_flag, char* packet)
+int generateControlPacket(int start_end_flag, unsigned char* packet)
 {
 	int i = 0, j = 0;
 
@@ -53,7 +53,7 @@ int generateControlPacket(int start_end_flag, char* packet)
 	}
 
 	packet[++i] = fileNameIndicator;
-	packet[++i] = (char)strlen(sendFile.fileName);
+	packet[++i] = (unsigned char)strlen(sendFile.fileName);
 
 	for(j = 0; j < strlen(sendFile.fileName); j++)
 		packet[++i] = sendFile.fileName[j];
@@ -65,7 +65,7 @@ int generateControlPacket(int start_end_flag, char* packet)
 }
 
 
-int main(int argc, char** argv){
+int main(int argc, unsigned char** argv){
 
 	int port;
 
@@ -135,7 +135,7 @@ int readData(){
 
 //untested
 void sendControlPacket(int start_end_flag){
-	char packet[260];
+	unsigned char packet[260];
 	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
@@ -143,15 +143,15 @@ void sendControlPacket(int start_end_flag){
 
 //untested
 void readControlPacket(int start_end_flag){
-	char packet[260];
+	unsigned char packet[260];
 	llread(application.fd, packet);
 }
 
 //untested
 void divideFileData(){
 	int res = 0;
-	char data[256];
-	char packet[260];
+	unsigned char data[256];
+	unsigned char packet[260];
 
 	while((res = read(sendFile.fd,&data,256))>0){
 		generateDataPacket(data,res,packet);
