@@ -18,8 +18,6 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 
 	bccCheck = 0;
 
-
-
 	return 0;
 }
 

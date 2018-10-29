@@ -547,10 +547,16 @@ int send_R(int fd, int success, unsigned char received_ns)
 			return -1;
 	}
 
-	printf("RR/REJ: %x\n", buf[3]);
+	printf("RR/REJ: %x\n", buf[2]);
 	write(fd, buf, 5);
 
-	printf("Sent response packet\n");
+	//testing
+	int i;
+	for(i = 0; i<5;i++){
+		printf("%x ", buf[i]);
+	}
+
+	printf("\n Sent response packet\n");
 
 return 0;
 }
