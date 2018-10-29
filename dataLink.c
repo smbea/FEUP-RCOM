@@ -18,7 +18,7 @@ unsigned char nr = 0x40;
 
 
 void genNextNs(){
-	if(dataLink.sequenceNumber == 0){
+	if(ns == S1){
 		ns = S0;
 	}
 	else{
@@ -400,8 +400,10 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
 	if (ns == 0x40)
 		initStateMachine(&st, SENT_BY_RECEPTOR, RR0);
-	else if (ns == 0x00)
+	else
 		initStateMachine(&st, SENT_BY_RECEPTOR, RR1);
+
+	printf("ns : %x", ns);	
 
 	struct sigaction act;
 	act.sa_handler = atende;
