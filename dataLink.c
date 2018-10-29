@@ -39,7 +39,7 @@ void genNextNr(unsigned char received_ns){
 int llopen(int port, int status)
 {
 	int fd;
-	unsigned char *portName;
+	char *portName;
 
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
@@ -487,7 +487,7 @@ void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffe
 	(*newLength) = j;
 }
 
-int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
+int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer)
 {
 	int indexS = 0, indexD = 0;
 	unsigned char escapeChar = 0x7d;

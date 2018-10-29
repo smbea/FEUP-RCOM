@@ -65,7 +65,7 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 }
 
 
-int main(int argc, unsigned char** argv){
+int main(int argc, char** argv){
 
 	int port;
 
