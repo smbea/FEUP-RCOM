@@ -9,7 +9,7 @@
 #include <string.h>
 #include <signal.h>
 
-
+//untested
 int generateDataPacket(char* data, int size, char* packet){
 
 	int h;
@@ -118,16 +118,21 @@ int main(int argc, char** argv){
 	return 0;
 
 }
+
+//untested
 int sendData(){
 	sendControlPacket(start);
 	return 0;
 }
 
+//untested
 int readData(){
 	readControlPacket(start);
 	return 0;
 }
 
+
+//untested
 void sendControlPacket(int start_end_flag){
 	char packet[260];
 	int packet_size = generateControlPacket(start, packet);
@@ -135,11 +140,13 @@ void sendControlPacket(int start_end_flag){
 	llwrite(application.fd, packet, packet_size);
 }
 
+//untested
 void readControlPacket(int start_end_flag){
 	char packet[260];
 	llread(application.fd, packet);
 }
 
+//untested
 void divideFileData(){
 	int res = 0;
 	char data[256];
