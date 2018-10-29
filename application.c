@@ -10,18 +10,20 @@
 #include <signal.h>
 
 
-int generateDataPacket(char* data, char* packet){
+int generateDataPacket(char* data, int size, char* packet){
+
+	int h;
+	int index = 3;
+	int l2 = size / 256;
+	int l1 = size % 256;
 
 	packet[0] = 0x01;
 	packet[1] = application.sequenceNumber % 255;
-	int dataSize = sizeof(data);
-	int l2 = dataSize / 256;
-	int l1 = dataSize % 256;
+	
 	packet[2] = (char)l2;
 	packet[3] = (char)l1;
-	int h;
-	int index = 3;
-	for(h = 0; h < dataSize; h++)
+
+	for(h = 0; h < size; h++)
 	{
 		packet[++index] = data[h];
 	}
@@ -122,6 +124,7 @@ int sendData(){
 }
 
 int readData(){
+	readControlPacket(start);
 	return 0;
 }
 
@@ -130,6 +133,21 @@ void sendControlPacket(int start_end_flag){
 	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
+}
+
+void readControlPacket(int start_end_flag){
+	char packet[260];
+	llread(application.fd, packet);
+}
+
+void divideFileData(){
+	int res = 0;
+	char data[256];
+	char packet[260];
+
+	while((res = read(sendFile.fd,&data,256))>0){
+		generateDataPacket(data,res,packet);
+	}
 }
 
 
