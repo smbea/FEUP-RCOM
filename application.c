@@ -114,6 +114,7 @@ int main(int argc, char** argv){
 	application.fd = llopen(port, status);
 
 	if(status == TRANSMITTER) sendData();
+	else readData();
 
 	return 0;
 
