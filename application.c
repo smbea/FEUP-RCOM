@@ -48,7 +48,7 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 
 	int s = sizeof(sendFile.fileSize);
 
-	for(i = 0; s-- > 0 ; i++){
+	for(i = 3; s-- > 0 ; i++){
 		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
 	}
 
@@ -159,15 +159,19 @@ void readControlPacket(int start_end_flag){
 
 //untested
 void sendDataPackets(){
-	int res = 0;
+	int res = 0, i=0;
 	unsigned char data[256];
 	unsigned char packet[260];
 	int packetSize;
 
 	while((res = read(sendFile.fd,&data,256))>0){
 		packetSize = generateDataPacket(data,res,packet);
-		if(llwrite(application.fd,packet,packetSize)>0)
-			application.sequenceNumber++;
+		
+		printf("packet: %d \n ", i);
+		i++;
+
+		/*if(llwrite(application.fd,packet,packetSize)>0)
+			application.sequenceNumber++;*/
 	}
 }
 

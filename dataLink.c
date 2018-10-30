@@ -232,7 +232,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 		j++;
 	}
 
-	buf[j++] = bcc2;
+	//buf[j++] = bcc2;
 	buf[j] = FLAG;
 	for(i = 0; i <= j; i++) {
 		printf("%d:%x\n", i, buf[i]);
@@ -401,9 +401,9 @@ void close_emissor(int fd, int status)
 unsigned char getBCC(unsigned char* buffer, int length)
 {
 		int i;
-		unsigned char bcc = 0;
+		unsigned char bcc = buffer[0];
 
-		for(i = 0; i<(length-2);i++){
+		for(i = 1; i<length;i++){
 			bcc = bcc ^ buffer[i];
 		}
 
@@ -436,7 +436,8 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		exit(-1);
 	}
 
-	bcc2 = getBCC(buffer, length);
+	bcc2 = getBCC(buffer, length-2);
+	buffer[length-1] = bcc2;
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
 	while (conta <= dataLink.numTransmissions)
@@ -611,7 +612,7 @@ int llread(int fd, unsigned char *buffer)
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("RECIVED: %x \n", buf);
+			printf(" %x \n", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -638,8 +639,8 @@ int llread(int fd, unsigned char *buffer)
 	printf("\n ");
 	///////////////////////////
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
-	printf("%x\n", calculatedBcc);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
+	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
