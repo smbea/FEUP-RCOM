@@ -39,7 +39,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2);
 void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength);
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer);
 void atende(int signo);
-byte getBCC(unsigned char* buffer, int length, int r_e_flag);
+unsigned char getBCC(unsigned char* buffer, int length, int r_e_flag);
 void genNextNs();
 void genNextNr(unsigned char received_ns);
 

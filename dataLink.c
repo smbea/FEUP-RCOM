@@ -373,18 +373,14 @@ void close_emissor(int fd, int status)
 	}
 }
 
-byte getBCC(unsigned char* buffer, int length, int status)
+unsigned char getBCC(unsigned char* buffer, int length, int status)
 {
-		byte bcc = 0;
-		int i = 0;
-		if(status == EMISSOR_FLAG)
-			i = 0;
-		else if(status == RECEIVER_FLAG){
-			i = 0;
-			//length -= 2;
+		int i;
+		unsigned char bcc = 0;
+
+		for(i = 0; i<(length-1);i++){
+			bcc = bcc ^ buffer[i];
 		}
-		for(; i < length; i++)
-				bcc = bcc ^ buffer[i];
 
 		return bcc;
 }
