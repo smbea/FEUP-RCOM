@@ -395,6 +395,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	unsigned char stuffedBuffer[260];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
+	unsigned char singleByte = 0;
 	int i = 0;
 	conta = 1, send_flag = 1;
 
@@ -434,11 +435,11 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
 		while (1)
 		{
-			res2 = read(fd, dataLink.frame, 1);
+			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
 				//printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, dataLink.frame[i]);
+				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
 
@@ -497,11 +498,6 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 
 	for(indexS = 0; indexS < length; indexS++)
 	{
-		if(indexS < 4){ //skips the first 4 bytes of the packet (flag,address,control and Bcc1)
-			destuffedBuffer[indexD] = stuffedBuffer[indexS];
-			indexD++;
-			continue;
-		}
 
 		//printf("found flag %x\n",flagChar ^ 0x20);
 		if(stuffedBuffer[indexS] != escapeChar)
@@ -561,23 +557,23 @@ int send_R(int fd, int success, unsigned char received_ns)
 return 0;
 }
 
-/*char * extractData(char * buffer, int length)
+unsigned char * extractData(unsigned char * buffer, unsigned char * data, int length)
 {
 	int index = 0;
-	char data[length];
 	int i;
-	for(i = 4; i < length + 4; i++)
+	for(i = 0; i < (length-1); i++)
 		data[index++] = buffer[i];
 
 	return data;
-}*/
+}
 
 int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[255];
-	int i =0;
+	unsigned char destuffed[256];
+	unsigned char buf = 0;
+	int i = 0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
@@ -593,21 +589,23 @@ int llread(int fd, unsigned char *buffer)
 	}
 	while (1)
 	{
-		res = read(fd, buffer + i, 1);
+		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("%x\n", buffer[i]);
-			(*st.currentStateFunc)(&st, buffer[i]);
-			i++;
+			printf("%x\n", buf);
+			(*st.currentStateFunc)(&st, buf);
 		}
 		if (st.currentState == END)
 			break;
+
+		if (st.currentState == DATA){
+			dataLink.frame[i] = buf;
+			i++;
+		}
+				
 	}
 	
-	
-	destuffedSize = byteDestuffing(buffer, i, destuffed);
-
-	
+	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	int j;
 
@@ -624,6 +622,8 @@ int llread(int fd, unsigned char *buffer)
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 	}
+
+	extractData(destuffed,buffer,destuffedSize);
 	
 	res2 = send_R(fd, bccSuccess,buffer[2]);
 
