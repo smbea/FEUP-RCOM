@@ -12,13 +12,11 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 	st->currentStateFunc = &stateStart;
 	st->index = 0;
 
-	currentA = r_e_char ;
+	currentA = r_e_char;
 
 	currentType = type;
 
 	bccCheck = 0;
-
-
 
 	return 0;
 }
@@ -68,8 +66,6 @@ int stateAddress(stateMachine *st, byte input) {
 
 	if(st->currentState != A_RCV)
 		return -1;
-
-		//printf("\nEXPECTED: %x INPUT: %x \n",currentType,input);
 
 	if(input == currentType) {
 		printf("Transitioned to c_rcv state\n");

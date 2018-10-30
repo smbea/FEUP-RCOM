@@ -49,7 +49,9 @@ enum applicationPackets{
  */
 int getFileSize(int fd);
 void sendControlPacket(int start_end_flag);
-int generateControlPacket(int start_end_flag, char* packet);
+void readControlPacket(int start_end_flag);
+int generateControlPacket(int start_end_flag, unsigned char* packet);
 int sendData();
 int readData();
 void sendControlPacket(int start_end_flag);
+void divideFileData();

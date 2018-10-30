@@ -14,11 +14,11 @@
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
 unsigned char ns = S0;
-unsigned char nr = 0x40;
+unsigned char nr = RR1;
 
 
 void genNextNs(){
-	if(dataLink.sequenceNumber == 0){
+	if(ns == S1){
 		ns = S0;
 	}
 	else{
@@ -193,7 +193,7 @@ void send_UA(int fd)
 	printf("sent UA packet\n");
 }
 
-int send_I(int fd, char *data, int length, byte bcc2)
+int send_I(int fd, unsigned char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
@@ -373,35 +373,32 @@ void close_emissor(int fd, int status)
 	}
 }
 
-byte getBCC(char* buffer, int length, int status)
+unsigned char getBCC(unsigned char* buffer, int length)
 {
-		byte bcc = 0;
-		int i = 0;
-		if(status == EMISSOR_FLAG)
-			i = 0;
-		else if(status == RECEIVER_FLAG){
-			i = 4;
-			length -= 2;
+		int i;
+		unsigned char bcc = 0;
+
+		for(i = 0; i<(length-2);i++){
+			bcc = bcc ^ buffer[i];
 		}
-		for(; i < length; i++)
-				bcc = bcc ^ buffer[i];
 
 		return bcc;
 }
 
-int llwrite(int fd, char *buffer, int length)
+int llwrite(int fd, unsigned char *buffer, int length)
 {
 
-	char stuffedBuffer[260];
+	unsigned char stuffedBuffer[260];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
+	unsigned char singleByte = 0;
 	int i = 0;
 	conta = 1, send_flag = 1;
 
 	if (ns == 0x40)
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR0);
-	else if (ns == 0x00)
-		initStateMachine(&st, SENT_BY_RECEPTOR, RR1);
+		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
+	else
+		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
 	struct sigaction act;
 	act.sa_handler = atende;
@@ -414,7 +411,7 @@ int llwrite(int fd, char *buffer, int length)
 		exit(-1);
 	}
 
-	bcc2 = getBCC(buffer, length, EMISSOR_FLAG);
+	bcc2 = getBCC(buffer, length);
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
 	while (conta <= dataLink.numTransmissions)
@@ -432,11 +429,11 @@ int llwrite(int fd, char *buffer, int length)
 
 		while (1)
 		{
-			res2 = read(fd, dataLink.frame, 1);
+			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
 				//printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, dataLink.frame[i]);
+				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
 
@@ -453,7 +450,7 @@ int llwrite(int fd, char *buffer, int length)
 }
 
 
-void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength)
+void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength)
 {
 	/**
 	 * Compute the BCC
@@ -487,7 +484,7 @@ void byteStuffing(char *buffer, int length, char *stuffedBuffer, int* newLength)
 	(*newLength) = j;
 }
 
-int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
+int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer)
 {
 	int indexS = 0, indexD = 0;
 	unsigned char escapeChar = 0x7d;
@@ -495,11 +492,6 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 
 	for(indexS = 0; indexS < length; indexS++)
 	{
-		if(indexS < 4){ //skips the first 4 bytes of the packet (flag,address,control and Bcc1)
-			destuffedBuffer[indexD] = stuffedBuffer[indexS];
-			indexD++;
-			continue;
-		}
 
 		//printf("found flag %x\n",flagChar ^ 0x20);
 		if(stuffedBuffer[indexS] != escapeChar)
@@ -522,55 +514,60 @@ int byteDestuffing(char* stuffedBuffer, int length, char* destuffedBuffer)
 
 int send_R(int fd, int success, unsigned char received_ns)
 {
-	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, 0, 0, FLAG};
+	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, 0, 0, FLAG};
 	if(success)
 	{
-
 		genNextNr(received_ns);
 
 		buf[2] = nr;
-		buf[3] = nr ^ SENT_BY_RECEPTOR;
+		buf[3] = nr ^ SENT_BY_EMISSOR;
 	}
 	else{
 		if(ns == S0)
 		{
 			buf[2] = REJ1;
-			buf[3] = REJ1 ^ SENT_BY_RECEPTOR;
+			buf[3] = REJ1 ^ SENT_BY_EMISSOR;
 		}
 		else if(ns == S1)
 		{
 			buf[2] = REJ0;
-			buf[3] = REJ0 ^ SENT_BY_RECEPTOR;
+			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
 		else
 			return -1;
 	}
 
-	printf("RR/REJ: %x\n", buf[3]);
+	printf("RR/REJ: %x\n", buf[2]);
 	write(fd, buf, 5);
 
-	printf("Sent response packet\n");
+	//testing
+	int i;
+	for(i = 0; i<5;i++){
+		printf("%x ", buf[i]);
+	}
+
+	printf("\n Sent response packet\n");
 
 return 0;
 }
 
-/*char * extractData(char * buffer, int length)
+unsigned char * extractData(unsigned char * buffer, unsigned char * data, int length)
 {
 	int index = 0;
-	char data[length];
 	int i;
-	for(i = 4; i < length + 4; i++)
+	for(i = 0; i < (length-1); i++)
 		data[index++] = buffer[i];
 
 	return data;
-}*/
+}
 
-int llread(int fd, char *buffer)
+int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	char destuffed[255];
-	int i =0;
+	unsigned char destuffed[256];
+	unsigned char buf = 0;
+	int i = 0, j=0, k=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
@@ -586,39 +583,49 @@ int llread(int fd, char *buffer)
 	}
 	while (1)
 	{
-		res = read(fd, buffer + i, 1);
+		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("%x\n", buffer[i]);
-			(*st.currentStateFunc)(&st, buffer[i]);
-			i++;
+			printf("RECIVED: %x \n", buf);
+			(*st.currentStateFunc)(&st, buf);
+			if(k == 2) ns = buf;
+			k++;
 		}
 		if (st.currentState == END)
 			break;
+
+		if (st.currentState == DATA){
+			dataLink.frame[i] = buf;
+			i++;
+		}
+				
 	}
+	printf("\n");
 	
-	
-	destuffedSize = byteDestuffing(buffer, i, destuffed);
+	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
-	
-
-	int j;
-
+	//testing////////////////////////////
+	printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
-		printf("DB: %x\n", destuffed[j]);
+		printf("%x ", destuffed[j]);
 	}
+	printf("\n ");
+	///////////////////////////
 
-	/*unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
-	printf("BCC: %x\n", x);
-	printf("BCC recieved: %x\n", destuffed[destuffedSize - 2]);
-	if(getBCC(destuffed, destuffedSize , RECEIVER_FLAG) == destuffed[destuffedSize - 2])
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
+	printf("%x\n", calculatedBcc);
+	unsigned char receivedBcc = destuffed[destuffedSize - 1];
+
+	if(calculatedBcc == receivedBcc)
 	{
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}*/
+	}
+
+	extractData(destuffed,buffer,destuffedSize);
 	
-	res2 = send_R(fd, bccSuccess,buffer[2]);
+	res2 = send_R(fd, bccSuccess,ns);
 
 	return res2;
 }
