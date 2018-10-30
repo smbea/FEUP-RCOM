@@ -33,7 +33,6 @@ void genNextNr(unsigned char received_ns){
 	else{
 		ns = RR0;
 	}
-	printf("ns - ns: %x - %x",received_ns,nr);
 }
 
 
@@ -568,7 +567,7 @@ int llread(int fd, unsigned char *buffer)
 	int bccSuccess = 0;
 	unsigned char destuffed[256];
 	unsigned char buf = 0;
-	int i = 0;
+	int i = 0, j=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
@@ -582,14 +581,16 @@ int llread(int fd, unsigned char *buffer)
 		printf("Error\n");
 		exit(-1);
 	}
+	printf("RECEIVED: ");
 	while (1)
 	{
-		printf("RECEIVED: ");
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
 			printf("%x ", buf);
 			(*st.currentStateFunc)(&st, buf);
+			if(j == 2) ns = buf;
+			j++;
 		}
 		if (st.currentState == END)
 			break;
@@ -610,7 +611,7 @@ int llread(int fd, unsigned char *buffer)
 	printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
-		printf("DB: %x ", destuffed[j]);
+		printf("%x ", destuffed[j]);
 	}
 	printf("\n ");
 	///////////////////////////
@@ -627,7 +628,7 @@ int llread(int fd, unsigned char *buffer)
 
 	extractData(destuffed,buffer,destuffedSize);
 	
-	res2 = send_R(fd, bccSuccess,buffer[2]);
+	res2 = send_R(fd, bccSuccess,ns);
 
 	return res2;
 }
