@@ -68,6 +68,8 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 int main(int argc, char** argv){
 
 	int port;
+	application.dataSize = 512 ;
+	application.dataPacketSize = application.dataSize + 4;
 
 	if (argc < 4)
 	{

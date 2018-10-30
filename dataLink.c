@@ -11,6 +11,8 @@
 #include <string.h>
 #include <signal.h>
 
+#define frameSize 520
+
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
 unsigned char ns = S0;
@@ -197,7 +199,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
-	unsigned char buf[260] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
+	unsigned char buf[frameSize] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
 	int j = 4;
 
 	for (i = 0; i < length; i++)
