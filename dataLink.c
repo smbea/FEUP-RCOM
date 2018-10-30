@@ -581,13 +581,12 @@ int llread(int fd, unsigned char *buffer)
 		printf("Error\n");
 		exit(-1);
 	}
-	printf("RECEIVED: ");
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("%x ", buf);
+			printf("RECIVED: %x \n", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
