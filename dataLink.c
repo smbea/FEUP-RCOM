@@ -379,7 +379,7 @@ unsigned char getBCC(unsigned char* buffer, int length, int status)
 		int i;
 		unsigned char bcc = 0;
 
-		for(i = 0; i<(length-1);i++){
+		for(i = 0; i<(length-2);i++){
 			bcc = bcc ^ buffer[i];
 		}
 
