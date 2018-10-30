@@ -3,18 +3,6 @@
 
 #include "stateMachine.h"
 
-/* global variable holding the state machine */
-stateMachine st;
-
-struct linkLayer {
-  int baudRate; /*Velocidade de transmissão*/
-  unsigned int timeout; /*Valor do temporizador: 1 s*/
-  unsigned int numTransmissions; /*Número de tentativas em caso de falha*/
-  unsigned char frame[512]; /*Trama*/
-};
-
-struct linkLayer dataLink;
-
 enum R_E_FLAG{
   EMISSOR_FLAG = 0,
   RECEIVER_FLAG = 1
