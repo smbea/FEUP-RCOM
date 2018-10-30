@@ -41,6 +41,20 @@ void alarmHandler(int signo) {
 	conta++;
 }
 
+/**
+ * @brief Subscribes to alarm signals
+ * 
+ * @retval 0 Successfully installed signals handler
+ * @retval -1 Failed to install the handler, with errno set
+ */
+int alarmSubscribeSignals() {
+	struct sigaction act;
+	act.sa_handler = alarmHandler;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+
+	return sigaction(SIGALRM, &act, NULL);
+}
 
 /**
  * @brief Processes the expected SET packet sent by the transmitter machine
@@ -53,7 +67,7 @@ static void open_receiver(int fd) {
 
 	unsigned char frame;
 	while (st.currentState != END) {
-		if (read(fd, &frame, 1) > 0)
+		if (read(fd, &frame, 1) >= 0)
 			(*st.currentStateFunc)(&st, frame);
 		else 
 			perror("open_receiver");
@@ -62,43 +76,36 @@ static void open_receiver(int fd) {
 	send_UA(fd);
 }
 
-static void open_emissor(int fd) {
+static int open_emissor(int fd) {
 	int res;
 
+	// set state machine to expect a UA packet
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
-	unsigned char teste;
-
+	// attempt to send the SET packet and wait for UA response
 	while (conta <= dataLink.numTransmissions) {
-		if (send_flag)
-		{
-
+		if (send_flag) {
 			printf("writing message\n");
 			send_SET(fd);
-
-			alarm(dataLink.timeout); // activa alarme de 3s
+			alarm(dataLink.timeout);
 			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
+		unsigned char input;
 		while (1)
 		{
-			res = read(fd, &teste, 1);
+			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				//printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				//printf("%x\n", input);
+				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -304,7 +311,7 @@ void close_receiver(int fd, int status)
 		exit(-1);
 	}
 
-	unsigned char teste;
+	unsigned char input;
 
 	while (conta <= dataLink.numTransmissions)
 	{ //4 tentativas de alarme
@@ -321,11 +328,11 @@ void close_receiver(int fd, int status)
 
 		while (1)
 		{
-			res = read(fd, &teste, 1);
+			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				printf("%x\n", input);
+				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -356,7 +363,7 @@ void close_emissor(int fd, int status)
 		exit(-1);
 	}
 
-	unsigned char teste;
+	unsigned char input;
 
 	while (conta <= dataLink.numTransmissions)
 	{
@@ -373,11 +380,11 @@ void close_emissor(int fd, int status)
 
 		while (1)
 		{
-			res = read(fd, &teste, 1);
+			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				printf("%x\n", input);
+				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -450,7 +457,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				//printf("%x\n", teste);
+				//printf("%x\n", input);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
