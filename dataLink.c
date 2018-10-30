@@ -18,18 +18,6 @@ int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
 
-/* global alarmRaisesCntiner with protocol information */	
-struct linkLayer {	
-	int baudRate; /*Velocidade de transmissão*/	
-	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
-	unsigned int timeout; /*Valor do temporizador: 1 s*/	
-	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/	
-	unsigned char frame[512]; /*Trama*/	
-} dataLink;
-
-/* global variable holding the state machine */
-stateMachine st;
-
 /**
  * @brief Handler to be called upon alarm signals
  * 
@@ -98,11 +86,11 @@ static int open_emissor(int fd) {
 		// send the SET packet
 		// TODO: not sure if this conditional if is needed
 		if (send_flag) {
-			send_flag = 0;
+			//printf("writing message\n");
 			send_SET(fd);
-			printf("TRANSMITTER: Sent SET packet...\n");
 			alarm(dataLink.timeout);
-			printf("TRANSMITTER: Set alarm\n");
+			//printf("sent alarm\n");
+			send_flag = 0;
 		}
 
 		unsigned char input;
@@ -212,15 +200,14 @@ void send_SET(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
 	write(fd, buf, 5);
-	printf("sent SET packet\n");
+	printf("Sent SET frame\n");
 }
 
 void send_UA(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
-	printf("\n %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
-	printf("sent UA packet\n");
+	printf("sent UA frame\n");
 }
 
 int send_I(int fd, unsigned char *data, int length, byte bcc2)
@@ -241,11 +228,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	res = write(fd, buf, j+1);
 
 
-	if (res > 0)
-	{
-		printf("sent I packet\n");
-		return res;
-	}
+	if (res > 0) return res;
 	return -1;
 }
 
@@ -432,7 +415,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	{
 		if (send_flag)
 		{
-			printf("writing frame\n");
 			res1 = send_I(fd, stuffedBuffer, newLength, bcc2);
 			if (res1 < 0)
 				return -1;
@@ -535,6 +517,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
+		printf("Sent RR: %x\n", buf[2]);
 	}
 	else{
 		if(ns == S0)
@@ -547,20 +530,10 @@ int send_R(int fd, int success, unsigned char received_ns)
 			buf[2] = REJ0;
 			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
-		else
-			return -1;
+		printf("Sent REJ: %x\n", buf[2]);
 	}
 
-	printf("RR/REJ: %x\n", buf[2]);
 	write(fd, buf, 5);
-
-	//testing
-	int i;
-	for(i = 0; i<5;i++){
-		printf("%x ", buf[i]);
-	}
-
-	printf("\n Sent response packet\n");
 
 return 0;
 }
@@ -581,7 +554,7 @@ int llread(int fd, unsigned char *buffer)
 	int bccSuccess = 0;
 	unsigned char destuffed[258];
 	unsigned char buf = 0;
-	int i = 0, j=0, k=0;
+	int i = 0, k=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
@@ -590,13 +563,13 @@ int llread(int fd, unsigned char *buffer)
 		perror("open_emissor:");
 		return -1;
 	}
-	
+
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x ", buf);
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -610,28 +583,22 @@ int llread(int fd, unsigned char *buffer)
 		}
 				
 	}
-	printf("\n");
 	
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
-	printf("DB: ");
+	/*printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("%x ", destuffed[j]);
 	}
-	printf("\n ");
-	///////////////////////////
+	printf("\n ");*/
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
-	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
-	{
-		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}
 
 	extractData(destuffed,buffer,destuffedSize);
 	
