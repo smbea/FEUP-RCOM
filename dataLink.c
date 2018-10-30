@@ -380,8 +380,8 @@ byte getBCC(unsigned char* buffer, int length, int status)
 		if(status == EMISSOR_FLAG)
 			i = 0;
 		else if(status == RECEIVER_FLAG){
-			i = 4;
-			length -= 2;
+			i = 0;
+			//length -= 2;
 		}
 		for(; i < length; i++)
 				bcc = bcc ^ buffer[i];
@@ -403,8 +403,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 	else
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
-
-	printf("ns : %x", ns);	
 
 	struct sigaction act;
 	act.sa_handler = atende;
