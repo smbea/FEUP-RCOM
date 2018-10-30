@@ -586,7 +586,7 @@ int llread(int fd, unsigned char *buffer)
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("RECIVED: %x \n", buf);
+			printf(" %x \n", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -614,7 +614,7 @@ int llread(int fd, unsigned char *buffer)
 	///////////////////////////
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
-	printf("%x\n", calculatedBcc);
+	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
