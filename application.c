@@ -159,7 +159,7 @@ void readControlPacket(int start_end_flag){
 
 //untested
 void sendDataPackets(){
-	int res = 0, i;
+	int res = 0, i=0;
 	unsigned char data[256];
 	unsigned char packet[260];
 	int packetSize;
@@ -167,9 +167,9 @@ void sendDataPackets(){
 	while((res = read(sendFile.fd,&data,256))>0){
 		packetSize = generateDataPacket(data,res,packet);
 		
-		for(i = 0; i< packetSize;i++){
-			printf("%x ", packet[i]);
-		}
+		printf("packet: %d \n ", i);
+		i++;
+
 		/*if(llwrite(application.fd,packet,packetSize)>0)
 			application.sequenceNumber++;*/
 	}
