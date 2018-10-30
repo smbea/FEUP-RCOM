@@ -374,7 +374,7 @@ void close_emissor(int fd, int status)
 	}
 }
 
-unsigned char getBCC(unsigned char* buffer, int length, int status)
+unsigned char getBCC(unsigned char* buffer, int length)
 {
 		int i;
 		unsigned char bcc = 0;
@@ -602,17 +602,20 @@ int llread(int fd, unsigned char *buffer)
 	
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
+	//testing////////////////////////////
 	int j;
 
 	for(j = 0; j < destuffedSize; j++)
 	{
-		printf("DB: %x\n", destuffed[j]);
+		printf("DB: %x ", destuffed[j]);
 	}
+	printf("\n ");
+	///////////////////////////
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
 	printf("BCC: %x\n", calculatedBcc);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
-	printf("BCC recieved: %x\n", receivedBcc);
+
 	if(calculatedBcc == receivedBcc)
 	{
 		printf("BCC is correct \n");
