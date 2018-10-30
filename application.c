@@ -112,6 +112,7 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
+	application.sequenceNumber = 0;
 
 	if(status == TRANSMITTER) sendData();
 	else readData();
@@ -127,13 +128,11 @@ int sendData(){
 
 //testing///////////////////////
 printf("data packets\n");
-	unsigned char packet[260];
+	/*unsigned char packet[260];
 	unsigned char data[5] = {0x01,0x02,0x03,0x04,0x05};
-	int packetSize = generateDataPacket(data,5,packet);
-	llwrite(application.fd,packet,packetSize);
-
-	int packetSize = generateDataPacket(data,5,packet);
-	llwrite(application.fd,packet,packetSize);
+	int packetSize = generateDataPacket(data,5,packet);*/
+	
+	sendDataPackets();
 	return 0;
 }
 
@@ -159,7 +158,7 @@ void readControlPacket(int start_end_flag){
 }
 
 //untested
-void divideFileData(){
+void sendDataPackets(){
 	int res = 0;
 	unsigned char data[256];
 	unsigned char packet[260];
@@ -167,6 +166,8 @@ void divideFileData(){
 
 	while((res = read(sendFile.fd,&data,256))>0){
 		packetSize = generateDataPacket(data,res,packet);
+		if(llwrite(application.fd,packet,packetSize)>0)
+			application.sequenceNumber++;
 	}
 }
 

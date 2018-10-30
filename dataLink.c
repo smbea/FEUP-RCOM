@@ -565,7 +565,7 @@ int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[256];
+	unsigned char destuffed[258];
 	unsigned char buf = 0;
 	int i = 0, j=0, k=0;
 
