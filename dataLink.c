@@ -122,7 +122,7 @@ static int open_emissor(int fd) {
 	}
 
 	// if the max. number of transmissions was reached...
-	if(alarmRaisesCnt == dataLink.numTransmissions)
+	if(alarmRaisesCnt > dataLink.numTransmissions)
 		return -1;
 	else 
 		return 0;

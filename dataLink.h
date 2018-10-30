@@ -18,7 +18,7 @@ enum port{
  * 
  * @param port 
  * @param status
- * @retval 0 Successfully established connection
+ * @return int Upon success returns the file descriptor for the serial port
  * @retval -1 Unknown port
  * @retval -2 Couldn't open serial port interface
  * @retval -3 Coudln't get current terminal interface configuration

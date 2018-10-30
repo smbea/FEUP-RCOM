@@ -111,7 +111,7 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
-	if(application.fd) {
+	if(application.fd < 0) {
 		printf("ERROR: It wasn't possible to establish connection. Cannot proceed\n");
 		exit(-1);
 	}
