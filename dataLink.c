@@ -416,7 +416,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	{
 		if (send_flag)
 		{
-			printf("writing frame\n");
 			res1 = send_I(fd, stuffedBuffer, newLength, bcc2);
 			if (res1 < 0)
 				return -1;
@@ -519,6 +518,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
+		printf("Sent RR: %x\n", buf[2]);
 	}
 	else{
 		if(ns == S0)
@@ -531,20 +531,10 @@ int send_R(int fd, int success, unsigned char received_ns)
 			buf[2] = REJ0;
 			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
-		else
-			return -1;
+		printf("Sent REJ: %x\n", buf[2]);
 	}
 
-	printf("RR/REJ: %x\n", buf[2]);
 	write(fd, buf, 5);
-
-	//testing
-	int i;
-	for(i = 0; i<5;i++){
-		printf("%x ", buf[i]);
-	}
-
-	printf("\n Sent response packet\n");
 
 return 0;
 }
@@ -574,13 +564,13 @@ int llread(int fd, unsigned char *buffer)
 		perror("open_emissor:");
 		return -1;
 	}
-	
+
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x ", buf);
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -594,7 +584,6 @@ int llread(int fd, unsigned char *buffer)
 		}
 				
 	}
-	printf("\n");
 	
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
