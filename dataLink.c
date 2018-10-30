@@ -11,7 +11,7 @@
 #include <string.h>
 #include <signal.h>
 
-#define frameSize 520
+#define frameSize 522
 
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
@@ -67,10 +67,8 @@ static void open_receiver(int fd) {
 
 	unsigned char frame;
 	while (st.currentState != END) {
-		if (read(fd, &frame, 1) >= 0)
+		if (read(fd, &frame, 1) > 0)
 			(*st.currentStateFunc)(&st, frame);
-		else 
-			perror("open_receiver");
 	}
 
 	send_UA(fd);
@@ -234,19 +232,15 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 
 	for (i = 0; i < length; i++)
 	{
-		//printf("%c\n", data[i]);
 		buf[j] = data[i];
 		j++;
 	}
 
-	//buf[j++] = bcc2;
 	buf[j] = FLAG;
-	for(i = 0; i <= j; i++) {
-		printf("%d:%x\n", i, buf[i]);
-	}
+	
 	res = write(fd, buf, j+1);
-	//char buf2[6] = {0x00, 0x04, 0x7d, 0x5d, 0x7d, 0x5e};
-	//res = write(fd, buf2, 6);
+
+
 	if (res > 0)
 	{
 		printf("sent I packet\n");
@@ -284,7 +278,7 @@ int send_DISC(int fd, int status)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd, int status)
+int close_receiver(int fd, int status)
 {
 
 	int res;
@@ -307,15 +301,10 @@ void close_receiver(int fd, int status)
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
 	unsigned char input;
@@ -347,27 +336,23 @@ void close_receiver(int fd, int status)
 
 		if (st.currentState == END){
 			sigignore(SIGALRM);
-			return;
+			return 0;
 		}
 	}
 	printf("Communication closed by timeout. Last UA not received.\n");
+	return 0;
 }
 
-void close_emissor(int fd, int status)
+int close_emissor(int fd, int status)
 {
 	int res;
 
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
 	unsigned char input;
@@ -400,9 +385,10 @@ void close_emissor(int fd, int status)
 		if (st.currentState == END){
 			send_UA(fd);
 			sigignore(SIGALRM);
-			return;
+			return 0;
 		}
 	}
+	return 0;
 }
 
 unsigned char getBCC(unsigned char* buffer, int length)
@@ -432,15 +418,10 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	else
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
 	bcc2 = getBCC(buffer, length-2);
@@ -604,22 +585,18 @@ int llread(int fd, unsigned char *buffer)
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
+	
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x \n", buf);
+			printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;

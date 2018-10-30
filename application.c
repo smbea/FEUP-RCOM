@@ -23,7 +23,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	packet[2] = (unsigned char)l2;
 	packet[3] = (unsigned char)l1;
 
-	for(h = 0; h < size; h++)
+	for(h = 0; h <= size; h++)
 	{
 		packet[++index] = data[h];
 	}
@@ -57,9 +57,6 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 
 	for(j = 0; j < strlen(sendFile.fileName); j++)
 		packet[++i] = sendFile.fileName[j];
-
-		for(j = 0; j < i; j++)
-			printf("%x\n", packet[j]);
 
 	return i;
 }
@@ -125,15 +122,10 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
-	printf("control packet\n");
+	printf("Sent control packet\n");
 	sendControlPacket(start);
 
-//testing///////////////////////
-printf("data packets\n");
-	/*unsigned char packet[260];
-	unsigned char data[5] = {0x01,0x02,0x03,0x04,0x05};
-	int packetSize = generateDataPacket(data,5,packet);*/
-	
+	printf("Begining to send data packets\n");
 	sendDataPackets();
 	return 0;
 }
@@ -161,7 +153,7 @@ void readControlPacket(int start_end_flag){
 
 //untested
 void sendDataPackets(){
-	int res = 0, i=0;
+	int res = 0;
 	unsigned char data[application.dataSize];
 	unsigned char packet[application.dataPacketSize];
 	int packetSize;
@@ -169,11 +161,10 @@ void sendDataPackets(){
 	while((res = read(sendFile.fd,&data,application.dataSize))>0){
 		packetSize = generateDataPacket(data,res,packet);
 		
-		printf("packet: %d \n ", i);
-		i++;
-
-		/*if(llwrite(application.fd,packet,packetSize)>0)
-			application.sequenceNumber++;*/
+		if(llwrite(application.fd,packet,packetSize)>0){
+			printf("	%d . sent %d bytes\n",application.sequenceNumber,res);
+			application.sequenceNumber++;
+		}
 	}
 }
 
