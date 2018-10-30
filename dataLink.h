@@ -3,17 +3,18 @@
 
 #include "stateMachine.h"
 
+
+/* global alarmRaisesCntiner with protocol information */	
+struct linkLayer {	
+	int baudRate; /*Velocidade de transmissão*/	
+	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
+	unsigned int timeout; /*Valor do temporizador: 1 s*/	
+	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/	
+	unsigned char frame[512]; /*Trama*/	
+} dataLink;
+
 /* global variable holding the state machine */
 stateMachine st;
-
-struct linkLayer {
-  int baudRate; /*Velocidade de transmissão*/
-  unsigned int timeout; /*Valor do temporizador: 1 s*/
-  unsigned int numTransmissions; /*Número de tentativas em caso de falha*/
-  unsigned char frame[512]; /*Trama*/
-};
-
-struct linkLayer dataLink;
 
 enum R_E_FLAG{
   EMISSOR_FLAG = 0,
@@ -34,6 +35,7 @@ enum port{
  * @retval -2 Couldn't open serial port interface
  * @retval -3 Coudln't get current terminal interface configuration
  * @retval -4 Failed to apply terminal interface configuration
+ * @retval -5 Couldn't make a connection between host and guest
  */
 int llopen(int port, int status);
 
