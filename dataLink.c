@@ -412,7 +412,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		exit(-1);
 	}
 
-	bcc2 = getBCC(buffer, length, EMISSOR_FLAG);
+	bcc2 = getBCC(buffer, length);
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
 	while (conta <= dataLink.numTransmissions)
@@ -584,10 +584,11 @@ int llread(int fd, unsigned char *buffer)
 	}
 	while (1)
 	{
+		printf("RECEIVED: ");
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("%x\n", buf);
+			printf("%x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 		}
 		if (st.currentState == END)
@@ -599,12 +600,14 @@ int llread(int fd, unsigned char *buffer)
 		}
 				
 	}
+	printf("\n");
 	
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
 	int j;
 
+	printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("DB: %x ", destuffed[j]);
@@ -613,7 +616,7 @@ int llread(int fd, unsigned char *buffer)
 	///////////////////////////
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
-	printf("BCC: %x\n", calculatedBcc);
+	printf("%x\n", calculatedBcc);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
