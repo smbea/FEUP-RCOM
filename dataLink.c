@@ -567,7 +567,7 @@ int llread(int fd, unsigned char *buffer)
 	int bccSuccess = 0;
 	unsigned char destuffed[256];
 	unsigned char buf = 0;
-	int i = 0, j=0;
+	int i = 0, j=0, k=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
@@ -589,8 +589,8 @@ int llread(int fd, unsigned char *buffer)
 		{
 			printf("%x ", buf);
 			(*st.currentStateFunc)(&st, buf);
-			if(j == 2) ns = buf;
-			j++;
+			if(k == 2) ns = buf;
+			k++;
 		}
 		if (st.currentState == END)
 			break;
@@ -606,8 +606,6 @@ int llread(int fd, unsigned char *buffer)
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
-	int j;
-
 	printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
