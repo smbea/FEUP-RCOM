@@ -14,7 +14,7 @@
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
 unsigned char ns = S0;
-unsigned char nr = 0x40;
+unsigned char nr = RR1;
 
 
 void genNextNs(){
@@ -33,6 +33,7 @@ void genNextNr(unsigned char received_ns){
 	else{
 		ns = RR0;
 	}
+	printf("ns - ns: %x - %x",received_ns,nr);
 }
 
 
