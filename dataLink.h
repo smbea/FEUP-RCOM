@@ -25,13 +25,46 @@ enum port{
   COM2 = 1
 };
 
-//functions
-int llopen(int port, int f);
+/**
+ * @brief 
+ * 
+ * @param port 
+ * @param status 
+ * @retval -1 Unknown port
+ * @retval -2 Couldn't open serial port interface
+ * @retval -3 Coudln't get current terminal interface configuration
+ * @retval -4 Failed to apply terminal interface configuration
+ */
+int llopen(int port, int status);
+
+/**
+ * @brief 
+ * 
+ * @param fd 
+ * @param buffer 
+ * @param length 
+ * @return int 
+ */
 int llwrite(int fd, unsigned char * buffer, int length);
+
+/**
+ * @brief 
+ * 
+ * @param fd 
+ * @param buffer 
+ * @return int 
+ */
 int llread(int fd, unsigned char * buffer);
+
+/**
+ * @brief 
+ * 
+ * @param fd 
+ * @param r_e_flag 
+ * @return int 
+ */
 int llclose(int fd, int r_e_flag);
-void open_receiver(int fd);
-void open_emissor(int fd);
+
 void send_SET(int fd);
 void send_UA(int fd);
 int send_I(int fd, unsigned char *data, int length, byte bcc2);
