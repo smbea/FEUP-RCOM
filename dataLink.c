@@ -11,10 +11,170 @@
 #include <string.h>
 #include <signal.h>
 
+#define frameSize 522
+
 struct termios oldtio, newtio;
-int send_flag = 1, conta = 1;
+int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
+
+/**
+ * @brief Handler to be called upon alarm signals
+ * 
+ * @param signo The signal identifier
+ */
+void alarmHandler(int signo) {
+	printf("alarme # %d\n", alarmRaisesCnt);
+	send_flag = 1;
+	alarmRaisesCnt++;
+}
+
+/**
+ * @brief Subscribes to alarm signals
+ * 
+ * @retval 0 Successfully installed signals handler
+ * @retval -1 Failed to install the handler, with errno set
+ */
+int alarmSubscribeSignals() {
+	struct sigaction act;
+	act.sa_handler = alarmHandler;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+
+	return sigaction(SIGALRM, &act, NULL);
+}
+
+/**
+ * @brief Processes the expected SET packet sent by the transmitter machine
+ * One the SET packet is received and acknowledged, it sends an UA packet
+ * 
+ * @param fd File descriptor for the serial port interface used by this host machine
+ */
+static void open_receiver(int fd) {
+	initStateMachine(&st, SENT_BY_EMISSOR, SET);
+
+	unsigned char frame;
+	while (st.currentState != END) {
+		if (read(fd, &frame, 1) > 0)
+			(*st.currentStateFunc)(&st, frame);
+	}
+
+	send_UA(fd);
+}
+
+/**
+ * @brief Sends a SET packet through the serial port and waits for an acknowledgement UA packet
+ * 
+ * @param fd 
+ * @retval 0 Connection established successfully
+ * @retval -1 Timeout. Couldn't get any response from receiver machine
+ */
+static int open_emissor(int fd) {
+	int res;
+
+	// set state machine to expect a UA packet
+	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
+
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
+	}
+
+	// attempt to send the SET packet and wait for UA response
+	while (alarmRaisesCnt <= dataLink.numTransmissions) {
+		// send the SET packet
+		// TODO: not sure if this conditional if is needed
+		if (send_flag) {
+			//printf("writing message\n");
+			send_SET(fd);
+			alarm(dataLink.timeout);
+			//printf("sent alarm\n");
+			send_flag = 0;
+		}
+
+		unsigned char input;
+		// while the state machine doesn't reach END state
+		// or the alarm hasn't raised
+		while (!(st.currentState == END) && !send_flag) {
+			// read single byte
+			res = read(fd, &input, 1);
+			if (res == 1) // update state machine if read operation was successful
+				(*st.currentStateFunc)(&st, input);
+		}
+
+		if (st.currentState == END){
+			sigignore(SIGALRM);
+			return 0;
+		}
+	}
+
+	// if the max. number of transmissions was reached...
+	if(alarmRaisesCnt == dataLink.numTransmissions)
+		return -1;
+	else 
+		return 0;
+}
+
+int llopen(int port, int status) {
+	// set default values
+	dataLink.baudRate = B38400;
+	dataLink.timeout = 3;
+	dataLink.numTransmissions=3;
+	
+	int fd; // file descriptor for terminal
+	char *portName; // path to serial port interface
+
+	// validate port
+	if (port == COM1)
+		portName = "/dev/ttyS0";
+	else if (port == COM2)
+		portName = "/dev/ttyS1";
+	else
+		return -1;
+
+	// attempt to open the serial port interface
+	if((fd = open(portName, O_RDWR | O_NOCTTY)) < 0) {
+		perror(portName);
+		return -2;
+	}
+
+	// save current terminal interface configuration
+	if (tcgetattr(fd, &oldtio) == -1) {
+		perror("tcgetattr");
+		return -3;
+	}
+
+	// setup terminal interface
+	bzero(&newtio, sizeof(newtio));
+	newtio.c_cflag = dataLink.baudRate | CS8 | CLOCAL | CREAD;
+	newtio.c_iflag = IGNPAR;
+	newtio.c_oflag = 0;
+	newtio.c_lflag = 0; // set input mode (non-canonical, no echo,...)
+	newtio.c_cc[VTIME] = 1; // inter-character timer unused
+	newtio.c_cc[VMIN] = 0;
+	tcflush(fd, TCIOFLUSH); // flushes  both  data  received but not read, and data written but not transmitted
+
+	if (tcsetattr(fd, TCSANOW, &newtio) == -1) { // try to apply new configuration
+		perror("tcsetattr");
+		return -4;
+	}
+
+	// TODO remove this
+	printf("New termios structure set\n");
+
+	// depending on if the host machine is the transmitter or receiver
+	// send/wait for initial packets to establish connection
+	if (status == RECEIVER_FLAG)
+		open_receiver(fd);
+	else if (status == EMISSOR_FLAG) {
+		int ret = open_emissor(fd);
+		if(ret) return -5; // transmittor gave out, coudln't establish connection
+	}
+
+	// return the file descriptor for the serial port interface
+	return fd;
+}
 
 
 void genNextNs(){
@@ -36,190 +196,39 @@ void genNextNr(unsigned char received_ns){
 }
 
 
-int llopen(int port, int status)
-{
-	int fd;
-	char *portName;
-
-	dataLink.baudRate = B38400;
-	dataLink.timeout = 3;
-	dataLink.numTransmissions=3;
-
-	if (port == COM1)
-		portName = "/dev/ttyS0";
-	else if (port == COM2)
-		portName = "/dev/ttyS1";
-	else
-		return -1;
-
-	fd = open(portName, O_RDWR | O_NOCTTY);
-	if (fd < 0)
-	{
-		perror(portName);
-		exit(-1);
-	}
-
-	if (tcgetattr(fd, &oldtio) == -1)
-	{ /* save current port settings */
-		perror("tcgetattr");
-		exit(-1);
-	}
-
-	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = dataLink.baudRate | CS8 | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
-
-	/* set input mode (non-canonical, no echo,...) */
-	newtio.c_lflag = 0;
-
-	newtio.c_cc[VTIME] = 1; /* inter-character timer unused */
-	newtio.c_cc[VMIN] = 0;
-
-	tcflush(fd, TCIOFLUSH);
-
-	if (tcsetattr(fd, TCSANOW, &newtio) == -1)
-	{
-		perror("tcsetattr");
-		exit(-1);
-	}
-
-	printf("New termios structure set\n");
-
-	if (status == RECEIVER_FLAG)
-		open_receiver(fd);
-	else if (status == EMISSOR_FLAG)
-		open_emissor(fd);
-
-	return fd;
-}
-
-void open_receiver(int fd)
-{
-	/*
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;*/
-	initStateMachine(&st, SENT_BY_EMISSOR, SET);
-
-	unsigned char frame;
-	while (st.currentState != END)
-	{
-		if (read(fd, &frame, 1) > 0)
-		{
-			(*st.currentStateFunc)(&st, frame);
-
-			//printf("received: %X\n", frame);
-		}
-	}
-
-	send_UA(fd);
-
-	//sleep(3);
-}
-
-void atende(int signo)
-{
-	printf("alarme # %d\n", conta);
-	send_flag = 1;
-	conta++;
-}
-
-void open_emissor(int fd)
-{
-
-	int res;
-
-	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
-
-	struct sigaction act;
-	act.sa_handler = atende;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
-	}
-
-	unsigned char teste;
-
-	while (conta <= dataLink.numTransmissions)
-
-	{
-		if (send_flag)
-		{
-
-			printf("writing message\n");
-			send_SET(fd);
-
-			alarm(dataLink.timeout); // activa alarme de 3s
-			printf("sent alarm\n");
-			send_flag = 0;
-		}
-
-		while (1)
-		{
-			res = read(fd, &teste, 1);
-			if (res > 0)
-			{
-				//printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
-			}
-			if (st.currentState == END || send_flag)
-				break;
-		}
-
-		if (st.currentState == END){
-			sigignore(SIGALRM);
-			return;
-		}
-	}
-}
-
-
 void send_SET(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
 	write(fd, buf, 5);
-	printf("sent SET packet\n");
+	printf("Sent SET frame\n");
 }
 
 void send_UA(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
-	printf("\n %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
-	printf("sent UA packet\n");
+	printf("sent UA frame\n");
 }
 
 int send_I(int fd, unsigned char *data, int length, byte bcc2)
 {
 
 	int res = 0, i = 0;
-	unsigned char buf[260] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
+	unsigned char buf[frameSize] = {FLAG, SENT_BY_EMISSOR, ns, SENT_BY_EMISSOR ^ ns};
 	int j = 4;
 
 	for (i = 0; i < length; i++)
 	{
-		//printf("%c\n", data[i]);
 		buf[j] = data[i];
 		j++;
 	}
 
-	buf[j++] = bcc2;
 	buf[j] = FLAG;
-	for(i = 0; i <= j; i++) {
-		printf("%d:%x\n", i, buf[i]);
-	}
+	
 	res = write(fd, buf, j+1);
-	//char buf2[6] = {0x00, 0x04, 0x7d, 0x5d, 0x7d, 0x5e};
-	//res = write(fd, buf2, 6);
-	if (res > 0)
-	{
-		printf("sent I packet\n");
-		return res;
-	}
+
+
+	if (res > 0) return res;
 	return -1;
 }
 
@@ -252,7 +261,7 @@ int send_DISC(int fd, int status)
 
 //How to handle an error in a last UA sent. After sending the last UA the receiver closes/disconnects, if this UA is not received by the receiver
 //should the receiver time-out and also disconnect/close or should it stay in a infinite wait for the last UA? Use timeout
-void close_receiver(int fd, int status)
+int close_receiver(int fd, int status)
 {
 
 	int res;
@@ -275,20 +284,15 @@ void close_receiver(int fd, int status)
 	//Waits for UA flag to end the data link, while it does not receive UA flag tries to resend DISC flag
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
-	struct sigaction act;
-	act.sa_handler = atende;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
-	unsigned char teste;
+	unsigned char input;
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{ //4 tentativas de alarme
 		if (send_flag)
 		{
@@ -303,11 +307,11 @@ void close_receiver(int fd, int status)
 
 		while (1)
 		{
-			res = read(fd, &teste, 1);
+			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				printf("%x\n", input);
+				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -315,32 +319,28 @@ void close_receiver(int fd, int status)
 
 		if (st.currentState == END){
 			sigignore(SIGALRM);
-			return;
+			return 0;
 		}
 	}
 	printf("Communication closed by timeout. Last UA not received.\n");
+	return 0;
 }
 
-void close_emissor(int fd, int status)
+int close_emissor(int fd, int status)
 {
 	int res;
 
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
-	struct sigaction act;
-	act.sa_handler = atende;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
-	unsigned char teste;
+	unsigned char input;
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
@@ -355,11 +355,11 @@ void close_emissor(int fd, int status)
 
 		while (1)
 		{
-			res = read(fd, &teste, 1);
+			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", teste);
-				(*st.currentStateFunc)(&st, teste);
+				printf("%x\n", input);
+				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
 				break;
@@ -368,17 +368,18 @@ void close_emissor(int fd, int status)
 		if (st.currentState == END){
 			send_UA(fd);
 			sigignore(SIGALRM);
-			return;
+			return 0;
 		}
 	}
+	return 0;
 }
 
 unsigned char getBCC(unsigned char* buffer, int length)
 {
 		int i;
-		unsigned char bcc = 0;
+		unsigned char bcc = buffer[0];
 
-		for(i = 0; i<(length-2);i++){
+		for(i = 1; i<length;i++){
 			bcc = bcc ^ buffer[i];
 		}
 
@@ -393,32 +394,27 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
 	int i = 0;
-	conta = 1, send_flag = 1;
+	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (ns == 0x40)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 	else
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
-	struct sigaction act;
-	act.sa_handler = atende;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
 
-	bcc2 = getBCC(buffer, length);
+	bcc2 = getBCC(buffer, length-2);
+	buffer[length-1] = bcc2;
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
-			printf("writing frame\n");
 			res1 = send_I(fd, stuffedBuffer, newLength, bcc2);
 			if (res1 < 0)
 				return -1;
@@ -432,7 +428,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				//printf("%x\n", teste);
+				//printf("%x\n", input);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
@@ -521,6 +517,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
+		printf("Sent RR: %x\n", buf[2]);
 	}
 	else{
 		if(ns == S0)
@@ -533,20 +530,10 @@ int send_R(int fd, int success, unsigned char received_ns)
 			buf[2] = REJ0;
 			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
-		else
-			return -1;
+		printf("Sent REJ: %x\n", buf[2]);
 	}
 
-	printf("RR/REJ: %x\n", buf[2]);
 	write(fd, buf, 5);
-
-	//testing
-	int i;
-	for(i = 0; i<5;i++){
-		printf("%x ", buf[i]);
-	}
-
-	printf("\n Sent response packet\n");
 
 return 0;
 }
@@ -565,28 +552,24 @@ int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[256];
+	unsigned char destuffed[258];
 	unsigned char buf = 0;
-	int i = 0, j=0, k=0;
+	int i = 0, k=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
-	struct sigaction act;
-	act.sa_handler = atende;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
+
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf("RECIVED: %x \n", buf);
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -600,28 +583,22 @@ int llread(int fd, unsigned char *buffer)
 		}
 				
 	}
-	printf("\n");
 	
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
-	printf("DB: ");
+	/*printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("%x ", destuffed[j]);
 	}
-	printf("\n ");
-	///////////////////////////
+	printf("\n ");*/
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
-	printf("%x\n", calculatedBcc);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
-	{
-		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}
 
 	extractData(destuffed,buffer,destuffedSize);
 	
@@ -634,7 +611,7 @@ int llread(int fd, unsigned char *buffer)
 int llclose(int fd, int status)
 {
 	printf("\nLLCLOSE\n");
-	conta = 1, send_flag = 1;
+	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)
 		close_receiver(fd, status);

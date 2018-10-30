@@ -23,11 +23,11 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	packet[2] = (unsigned char)l2;
 	packet[3] = (unsigned char)l1;
 
-	for(h = 0; h < size; h++)
+	for(h = 0; h <= size; h++)
 	{
 		packet[++index] = data[h];
 	}
-	return index;
+	return index+1;
 }
 
 
@@ -48,7 +48,7 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 
 	int s = sizeof(sendFile.fileSize);
 
-	for(i = 0; s-- > 0 ; i++){
+	for(i = 3; s-- > 0 ; i++){
 		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
 	}
 
@@ -58,9 +58,6 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 	for(j = 0; j < strlen(sendFile.fileName); j++)
 		packet[++i] = sendFile.fileName[j];
 
-		for(j = 0; j < i; j++)
-			printf("%x\n", packet[j]);
-
 	return i;
 }
 
@@ -68,6 +65,8 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 int main(int argc, char** argv){
 
 	int port;
+	application.dataSize = 512 ;
+	application.dataPacketSize = application.dataSize + 4;
 
 	if (argc < 4)
 	{
@@ -112,6 +111,7 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
+	application.sequenceNumber = 0;
 
 	if(status == TRANSMITTER) sendData();
 	else readData();
@@ -122,7 +122,11 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
+	printf("Sent control packet\n");
 	sendControlPacket(start);
+
+	printf("Begining to send data packets\n");
+	sendDataPackets();
 	return 0;
 }
 
@@ -135,7 +139,7 @@ int readData(){
 
 //untested
 void sendControlPacket(int start_end_flag){
-	unsigned char packet[260];
+	unsigned char packet[application.dataPacketSize];
 	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
@@ -143,18 +147,24 @@ void sendControlPacket(int start_end_flag){
 
 //untested
 void readControlPacket(int start_end_flag){
-	unsigned char packet[260];
+	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
 }
 
 //untested
-void divideFileData(){
+void sendDataPackets(){
 	int res = 0;
-	unsigned char data[256];
-	unsigned char packet[260];
+	unsigned char data[application.dataSize];
+	unsigned char packet[application.dataPacketSize];
+	int packetSize;
 
-	while((res = read(sendFile.fd,&data,256))>0){
-		generateDataPacket(data,res,packet);
+	while((res = read(sendFile.fd,&data,application.dataSize))>0){
+		packetSize = generateDataPacket(data,res,packet);
+		
+		if(llwrite(application.fd,packet,packetSize)>0){
+			printf("%d . sent %d bytes\n",application.sequenceNumber,res);
+			application.sequenceNumber++;
+		}
 	}
 }
 

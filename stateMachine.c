@@ -31,13 +31,13 @@ int stateStart(stateMachine *st, byte input) {
 
 	// if the input matches
 	if(input == FLAG) {
-		printf("Transitioned to flag_rcv state\n");
+		printf("	Transitioned to flag_rcv state\n");
 		// transitate the state to FLAG_RCV and update function
 		st->currentState = FLAG_RCV;
 		st->currentStateFunc = &stateFlag;
 	} else {
 		// stays on Start state
-		printf("Staying in start state\n");
+		printf("	Staying in start state\n");
 	}
 	return 0;
 }
@@ -47,14 +47,14 @@ int stateFlag(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == FLAG) {
-		printf("Staying in FLAG state");
+		printf("	Staying in FLAG state");
 	} else if(input == currentA) {
-		printf("Transitioned to a_rcv state\n");
+		printf("	Transitioned to a_rcv state\n");
 		st->currentState = A_RCV;
 		st->currentStateFunc = &stateAddress;
 	} else {
 		// unknown input, transitate to Start state
-		printf("Unknown input, back to start\n");
+		printf("	Unknown input, back to start\n");
 		st->currentState = START;
 		st->currentStateFunc = &stateStart;
 	}
@@ -68,18 +68,18 @@ int stateAddress(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == currentType) {
-		printf("Transitioned to c_rcv state\n");
+		printf("	Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
 	} else if(input == FLAG) {
 		// go back to flag state
-		printf("Got FLAG, back to flag state state\n");
+		printf("	Got FLAG, back to flag state state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
 	}
 	else {
 		// unknown input
-		printf("Unknown input, back to start\n");
+		printf("	Unknown input, back to start\n");
 		st->currentState = START;
 		st->currentStateFunc = &stateStart;
 	}
@@ -92,12 +92,12 @@ int stateProtection(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == FLAG) {
-		printf("Got flag, back to flag state\n");
+		printf("	Got flag, back to flag state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
 	} else if (input == (currentA^currentType)) {
 
-			printf("Transitioned to BCC state\n");
+			printf("	Transitioned to BCC state\n");
 			st->currentState = BCC;
 			st->currentStateFunc = &stateBCC;
 	} else {

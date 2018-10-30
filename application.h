@@ -8,6 +8,8 @@ struct applicationLayer {
   int fd; /*Descritor correspondente à porta série*/
   int status; /*TRANSMITTER | RECEIVER*/
   int sequenceNumber;
+  int dataSize;
+  int dataPacketSize;
 };
 
 struct applicationLayer application;
@@ -54,4 +56,4 @@ int generateControlPacket(int start_end_flag, unsigned char* packet);
 int sendData();
 int readData();
 void sendControlPacket(int start_end_flag);
-void divideFileData();
+void sendDataPackets();
