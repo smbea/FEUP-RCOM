@@ -11,128 +11,64 @@
 #include <string.h>
 #include <signal.h>
 
+/* variables to hold the new and olt terminal interface configuration */
 struct termios oldtio, newtio;
 int send_flag = 1, conta = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
 
+/* global container with protocol information */
+struct linkLayer {
+	int baudRate; /*Velocidade de transmissão*/
+	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/
+	unsigned int timeout; /*Valor do temporizador: 1 s*/
+	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/
+	unsigned char frame[512]; /*Trama*/
+} dataLink;
 
-void genNextNs(){
-	if(ns == S1){
-		ns = S0;
-	}
-	else{
-		ns = S1;
-	}
-}
-
-void genNextNr(unsigned char received_ns){
-	if(received_ns == S0){
-		nr = RR1;
-	}
-	else{
-		ns = RR0;
-	}
-}
+/* global variable holding the state machine */
+stateMachine st;
 
 
-int llopen(int port, int status)
-{
-	int fd;
-	char *portName;
-
-	dataLink.baudRate = B38400;
-	dataLink.timeout = 3;
-	dataLink.numTransmissions=3;
-
-	if (port == COM1)
-		portName = "/dev/ttyS0";
-	else if (port == COM2)
-		portName = "/dev/ttyS1";
-	else
-		return -1;
-
-	fd = open(portName, O_RDWR | O_NOCTTY);
-	if (fd < 0)
-	{
-		perror(portName);
-		exit(-1);
-	}
-
-	if (tcgetattr(fd, &oldtio) == -1)
-	{ /* save current port settings */
-		perror("tcgetattr");
-		exit(-1);
-	}
-
-	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = dataLink.baudRate | CS8 | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
-
-	/* set input mode (non-canonical, no echo,...) */
-	newtio.c_lflag = 0;
-
-	newtio.c_cc[VTIME] = 1; /* inter-character timer unused */
-	newtio.c_cc[VMIN] = 0;
-
-	tcflush(fd, TCIOFLUSH);
-
-	if (tcsetattr(fd, TCSANOW, &newtio) == -1)
-	{
-		perror("tcsetattr");
-		exit(-1);
-	}
-
-	printf("New termios structure set\n");
-
-	if (status == RECEIVER_FLAG)
-		open_receiver(fd);
-	else if (status == EMISSOR_FLAG)
-		open_emissor(fd);
-
-	return fd;
-}
-
-void open_receiver(int fd)
-{
-	/*
-	st.currentState = START;
-	st.currentStateFunc = &stateStart;*/
-	initStateMachine(&st, SENT_BY_EMISSOR, SET);
-
-	unsigned char frame;
-	while (st.currentState != END)
-	{
-		if (read(fd, &frame, 1) > 0)
-		{
-			(*st.currentStateFunc)(&st, frame);
-
-			//printf("received: %X\n", frame);
-		}
-	}
-
-	send_UA(fd);
-
-	//sleep(3);
-}
-
-void atende(int signo)
-{
+/**
+ * @brief Handler to be called upon alarm signals
+ * 
+ * @param signo The signal identifier
+ */
+void alarmHandler(int signo) {
 	printf("alarme # %d\n", conta);
 	send_flag = 1;
 	conta++;
 }
 
-void open_emissor(int fd)
-{
 
+/**
+ * @brief Processes the expected SET packet sent by the transmitter machine
+ * One the SET packet is received and acknowledged, it sends an UA packet
+ * 
+ * @param fd File descriptor for the serial port interface used by this host machine
+ */
+static void open_receiver(int fd) {
+	initStateMachine(&st, SENT_BY_EMISSOR, SET);
+
+	unsigned char frame;
+	while (st.currentState != END) {
+		if (read(fd, &frame, 1) > 0)
+			(*st.currentStateFunc)(&st, frame);
+		else 
+			perror("open_receiver");
+	}
+
+	send_UA(fd);
+}
+
+static void open_emissor(int fd) {
 	int res;
 
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	struct sigaction act;
-	act.sa_handler = atende;
+	act.sa_handler = alarmHandler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
@@ -144,9 +80,7 @@ void open_emissor(int fd)
 
 	unsigned char teste;
 
-	while (conta <= dataLink.numTransmissions)
-
-	{
+	while (conta <= dataLink.numTransmissions) {
 		if (send_flag)
 		{
 
@@ -176,6 +110,90 @@ void open_emissor(int fd)
 		}
 	}
 }
+
+int llopen(int port, int status) {
+	// set default values
+	dataLink.baudRate = B38400;
+	dataLink.timeout = 3;
+	dataLink.numTransmissions=3;
+	
+	int fd; // file descriptor for terminal
+	char *portName; // path to serial port interface
+
+	// validate port
+	if (port == COM1)
+		portName = "/dev/ttyS0";
+	else if (port == COM2)
+		portName = "/dev/ttyS1";
+	else
+		return -1;
+
+	// attempt to open the serial port interface
+	if((fd = open(portName, O_RDWR | O_NOCTTY)) < 0) {
+		perror(portName);
+		return -2;
+	}
+
+	// save current terminal interface configuration
+	if (tcgetattr(fd, &oldtio) == -1) {
+		perror("tcgetattr");
+		return -3;
+	}
+
+	// setup terminal interface
+	bzero(&newtio, sizeof(newtio));
+	newtio.c_cflag = dataLink.baudRate | CS8 | CLOCAL | CREAD;
+	newtio.c_iflag = IGNPAR;
+	newtio.c_oflag = 0;
+	newtio.c_lflag = 0; // set input mode (non-canonical, no echo,...)
+	newtio.c_cc[VTIME] = 1; // inter-character timer unused
+	newtio.c_cc[VMIN] = 0;
+	tcflush(fd, TCIOFLUSH); // flushes  both  data  received but not read, and data written but not transmitted
+
+	if (tcsetattr(fd, TCSANOW, &newtio) == -1) { // try to apply new configuration
+		perror("tcsetattr");
+		return -4;
+	}
+
+	// TODO remove this
+	printf("New termios structure set\n");
+
+	// depending on if the host machine is the transmitter or receiver
+	// send/wait for initial packets to establish connection
+	if (status == RECEIVER_FLAG)
+		open_receiver(fd);
+	else if (status == EMISSOR_FLAG)
+		open_emissor(fd);
+
+	// return the file descriptor for the serial port interface
+	return fd;
+}
+
+
+void genNextNs(){
+	if(ns == S1){
+		ns = S0;
+	}
+	else{
+		ns = S1;
+	}
+}
+
+void genNextNr(unsigned char received_ns){
+	if(received_ns == S0){
+		nr = RR1;
+	}
+	else{
+		ns = RR0;
+	}
+}
+
+
+
+
+
+
+
 
 
 void send_SET(int fd)
@@ -276,7 +294,7 @@ void close_receiver(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	struct sigaction act;
-	act.sa_handler = atende;
+	act.sa_handler = alarmHandler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
@@ -328,7 +346,7 @@ void close_emissor(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
 	struct sigaction act;
-	act.sa_handler = atende;
+	act.sa_handler = alarmHandler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
@@ -401,7 +419,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
 	struct sigaction act;
-	act.sa_handler = atende;
+	act.sa_handler = alarmHandler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
@@ -572,7 +590,7 @@ int llread(int fd, unsigned char *buffer)
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
 	struct sigaction act;
-	act.sa_handler = atende;
+	act.sa_handler = alarmHandler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
