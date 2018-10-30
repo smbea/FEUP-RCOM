@@ -207,7 +207,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 		j++;
 	}
 
-	buf[j++] = bcc2;
+	//buf[j++] = bcc2;
 	buf[j] = FLAG;
 	for(i = 0; i <= j; i++) {
 		printf("%d:%x\n", i, buf[i]);
@@ -378,7 +378,7 @@ unsigned char getBCC(unsigned char* buffer, int length)
 		int i;
 		unsigned char bcc = buffer[0];
 
-		for(i = 1; i<(length);i++){
+		for(i = 1; i<length;i++){
 			bcc = bcc ^ buffer[i];
 		}
 
@@ -614,7 +614,7 @@ int llread(int fd, unsigned char *buffer)
 	printf("\n ");
 	///////////////////////////
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
 	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
