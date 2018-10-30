@@ -55,10 +55,8 @@ static void open_receiver(int fd) {
 
 	unsigned char frame;
 	while (st.currentState != END) {
-		if (read(fd, &frame, 1) >= 0)
+		if (read(fd, &frame, 1) > 0)
 			(*st.currentStateFunc)(&st, frame);
-		else 
-			perror("open_receiver");
 	}
 
 	send_UA(fd);

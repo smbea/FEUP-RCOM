@@ -122,15 +122,10 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
-	printf("control packet\n");
+	printf("Sent control packet\n");
 	sendControlPacket(start);
 
-//testing///////////////////////
-printf("data packets\n");
-	/*unsigned char packet[260];
-	unsigned char data[5] = {0x01,0x02,0x03,0x04,0x05};
-	int packetSize = generateDataPacket(data,5,packet);*/
-	
+	printf("Begining to send data packets\n");
 	sendDataPackets();
 	return 0;
 }
@@ -167,8 +162,8 @@ void sendDataPackets(){
 		packetSize = generateDataPacket(data,res,packet);
 		
 		if(llwrite(application.fd,packet,packetSize)>0){
+			printf("	%d . sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
-			printf("%d . sent %d bytes\n",application.sequenceNumber,res);
 		}
 	}
 }
