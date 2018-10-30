@@ -17,7 +17,8 @@ enum port{
  * @brief 
  * 
  * @param port 
- * @param status 
+ * @param status
+ * @retval 0 Successfully established connection
  * @retval -1 Unknown port
  * @retval -2 Couldn't open serial port interface
  * @retval -3 Coudln't get current terminal interface configuration

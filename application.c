@@ -111,6 +111,10 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
+	if(application.fd) {
+		printf("ERROR: It wasn't possible to establish connection. Cannot proceed\n");
+		exit(-1);
+	}
 	application.sequenceNumber = 0;
 
 	if(status == TRANSMITTER) sendData();
