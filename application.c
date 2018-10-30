@@ -123,6 +123,12 @@ int main(int argc, char** argv){
 //untested
 int sendData(){
 	sendControlPacket(start);
+
+//testing///////////////////////
+	unsigned char packet[260];
+	unsigned char data[5] = {0x01,0x02,0x03,0x04,0x05};
+	int packetSize = generateDataPacket(data,5,packet);
+	llwrite(application.fd,packet,packetSize);
 	return 0;
 }
 
@@ -152,9 +158,10 @@ void divideFileData(){
 	int res = 0;
 	unsigned char data[256];
 	unsigned char packet[260];
+	int packetSize;
 
 	while((res = read(sendFile.fd,&data,256))>0){
-		generateDataPacket(data,res,packet);
+		packetSize = generateDataPacket(data,res,packet);
 	}
 }
 
