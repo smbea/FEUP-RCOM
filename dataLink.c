@@ -588,23 +588,18 @@ int llread(int fd, unsigned char *buffer)
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
-	printf("DB: ");
+	/*printf("DB: ");
 	for(j = 0; j < destuffedSize; j++)
 	{
 		printf("%x ", destuffed[j]);
 	}
-	printf("\n ");
-	///////////////////////////
+	printf("\n ");*/
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
-	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
-	{
-		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	}
 
 	extractData(destuffed,buffer,destuffedSize);
 	
