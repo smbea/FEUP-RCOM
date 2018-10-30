@@ -147,7 +147,7 @@ int readData(){
 
 //untested
 void sendControlPacket(int start_end_flag){
-	unsigned char packet[260];
+	unsigned char packet[application.dataPacketSize];
 	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
@@ -155,18 +155,18 @@ void sendControlPacket(int start_end_flag){
 
 //untested
 void readControlPacket(int start_end_flag){
-	unsigned char packet[260];
+	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
 }
 
 //untested
 void sendDataPackets(){
 	int res = 0, i=0;
-	unsigned char data[256];
-	unsigned char packet[260];
+	unsigned char data[application.dataSize];
+	unsigned char packet[application.dataPacketSize];
 	int packetSize;
 
-	while((res = read(sendFile.fd,&data,256))>0){
+	while((res = read(sendFile.fd,&data,application.dataSize))>0){
 		packetSize = generateDataPacket(data,res,packet);
 		
 		printf("packet: %d \n ", i);

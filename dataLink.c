@@ -18,11 +18,6 @@ int send_flag = 1, conta = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
 
-
-/* global variable holding the state machine */
-stateMachine st;
-
-
 /**
  * @brief Handler to be called upon alarm signals
  * 
@@ -106,7 +101,7 @@ static int open_emissor(int fd) {
 
 		if (st.currentState == END){
 			sigignore(SIGALRM);
-			return;
+			return 1;
 		}
 	}
 }
