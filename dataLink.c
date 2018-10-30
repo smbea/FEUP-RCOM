@@ -378,7 +378,7 @@ unsigned char getBCC(unsigned char* buffer, int length)
 		int i;
 		unsigned char bcc = buffer[0];
 
-		for(i = 1; i<(length-2);i++){
+		for(i = 1; i<(length);i++){
 			bcc = bcc ^ buffer[i];
 		}
 
@@ -412,6 +412,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	}
 
 	bcc2 = getBCC(buffer, length);
+	buffer[length-1] = bcc2;
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
 	while (conta <= dataLink.numTransmissions)
@@ -613,7 +614,7 @@ int llread(int fd, unsigned char *buffer)
 	printf("\n ");
 	///////////////////////////
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
 	printf("bcc calculated: %x - %x\n", calculatedBcc, destuffed[destuffedSize - 1]);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
