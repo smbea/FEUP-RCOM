@@ -396,7 +396,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	int i = 0;
 	conta = 1, send_flag = 1;
 
-	if (ns == 0x40)
+	if (ns == S1)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 	else
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
@@ -433,9 +433,8 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				//printf("%x\n", teste);
+				printf("%x ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
-				i++;
 			}
 
 			if (st.currentState == END || send_flag)
@@ -606,7 +605,7 @@ int llread(int fd, unsigned char *buffer)
 
 	for(j = 0; j < destuffedSize; j++)
 	{
-		printf("DB: %x\n", destuffed[j]);
+		printf("DB: %x ", destuffed[j]);
 	}
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
