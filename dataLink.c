@@ -608,10 +608,11 @@ int llread(int fd, unsigned char *buffer)
 		printf("DB: %x\n", destuffed[j]);
 	}
 
-	unsigned char x = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
-	printf("BCC: %x\n", x);
-	printf("BCC recieved: %x\n", destuffed[destuffedSize - 2]);
-	if(getBCC(destuffed, destuffedSize , RECEIVER_FLAG) == destuffed[destuffedSize - 2])
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize , RECEIVER_FLAG);
+	printf("BCC: %x\n", calculatedBcc);
+	unsigned char receivedBcc = destuffed[destuffedSize - 1];
+	printf("BCC recieved: %x\n", receivedBcc);
+	if(calculatedBcc == receivedBcc)
 	{
 		printf("BCC is correct \n");
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
