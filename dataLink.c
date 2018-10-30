@@ -18,14 +18,6 @@ int send_flag = 1, conta = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
 
-/* global container with protocol information */
-struct linkLayer {
-	int baudRate; /*Velocidade de transmissão*/
-	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/
-	unsigned int timeout; /*Valor do temporizador: 1 s*/
-	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/
-	unsigned char frame[512]; /*Trama*/
-} dataLink;
 
 /* global variable holding the state machine */
 stateMachine st;
@@ -195,13 +187,6 @@ void genNextNr(unsigned char received_ns){
 		ns = RR0;
 	}
 }
-
-
-
-
-
-
-
 
 
 void send_SET(int fd)

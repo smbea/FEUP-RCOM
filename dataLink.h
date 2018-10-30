@@ -3,8 +3,8 @@
 
 #include "stateMachine.h"
 
+/* global variable holding the state machine */
 stateMachine st;
-
 
 struct linkLayer {
   int baudRate; /*Velocidade de transmissão*/
