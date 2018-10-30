@@ -207,7 +207,6 @@ void send_UA(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
-	printf("\n %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
 	printf("sent UA frame\n");
 }
 
@@ -555,7 +554,7 @@ int llread(int fd, unsigned char *buffer)
 	int bccSuccess = 0;
 	unsigned char destuffed[258];
 	unsigned char buf = 0;
-	int i = 0, j=0, k=0;
+	int i = 0, k=0;
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
