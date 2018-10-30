@@ -48,7 +48,7 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 
 	int s = sizeof(sendFile.fileSize);
 
-	for(i = 0; s-- > 0 ; i++){
+	for(i = 3; s-- > 0 ; i++){
 		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
 	}
 
