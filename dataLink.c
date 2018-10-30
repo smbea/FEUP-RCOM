@@ -209,19 +209,15 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 
 	for (i = 0; i < length; i++)
 	{
-		//printf("%c\n", data[i]);
 		buf[j] = data[i];
 		j++;
 	}
 
-	//buf[j++] = bcc2;
 	buf[j] = FLAG;
-	for(i = 0; i <= j; i++) {
-		printf("%d:%x\n", i, buf[i]);
-	}
+	
 	res = write(fd, buf, j+1);
-	//char buf2[6] = {0x00, 0x04, 0x7d, 0x5d, 0x7d, 0x5e};
-	//res = write(fd, buf2, 6);
+
+
 	if (res > 0)
 	{
 		printf("sent I packet\n");
@@ -566,22 +562,18 @@ int llread(int fd, unsigned char *buffer)
 
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
-	struct sigaction act;
-	act.sa_handler = alarmHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
-	if (sigaction(SIGALRM, &act, NULL) == -1)
-	{
-		printf("Error\n");
-		exit(-1);
+	// install handler for alarm signals
+	if(alarmSubscribeSignals()) {
+		perror("open_emissor:");
+		return -1;
 	}
+	
 	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x \n", buf);
+			printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
