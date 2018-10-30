@@ -88,7 +88,6 @@ static int open_emissor(int fd) {
 		if (send_flag) {
 			//printf("writing message\n");
 			send_SET(fd);
-			printf("TRANSMITTER: Sent SET packet...\n");
 			alarm(dataLink.timeout);
 			//printf("sent alarm\n");
 			send_flag = 0;
@@ -201,7 +200,7 @@ void send_SET(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
 	write(fd, buf, 5);
-	printf("sent SET frame\n");
+	printf("Sent SET frame\n");
 }
 
 void send_UA(int fd)
