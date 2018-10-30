@@ -27,7 +27,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	{
 		packet[++index] = data[h];
 	}
-	return index;
+	return index+1;
 }
 
 
@@ -122,11 +122,16 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
+	printf("control packet\n");
 	sendControlPacket(start);
 
 //testing///////////////////////
+printf("data packets\n");
 	unsigned char packet[260];
 	unsigned char data[5] = {0x01,0x02,0x03,0x04,0x05};
+	int packetSize = generateDataPacket(data,5,packet);
+	llwrite(application.fd,packet,packetSize);
+
 	int packetSize = generateDataPacket(data,5,packet);
 	llwrite(application.fd,packet,packetSize);
 	return 0;
