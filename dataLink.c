@@ -14,11 +14,11 @@
 #define frameSize 520
 
 struct termios oldtio, newtio;
-int send_flag = 1, conta = 1;
+int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
 unsigned char nr = RR1;
 
-/* global container with protocol information */	
+/* global alarmRaisesCntiner with protocol information */	
 struct linkLayer {	
 	int baudRate; /*Velocidade de transmissão*/	
 	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
@@ -36,9 +36,9 @@ stateMachine st;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("alarme # %d\n", conta);
+	printf("alarme # %d\n", alarmRaisesCnt);
 	send_flag = 1;
-	conta++;
+	alarmRaisesCnt++;
 }
 
 /**
@@ -76,6 +76,13 @@ static void open_receiver(int fd) {
 	send_UA(fd);
 }
 
+/**
+ * @brief Sends a SET packet through the serial port and waits for an acknowledgement UA packet
+ * 
+ * @param fd 
+ * @retval 0 Connection established successfully
+ * @retval -1 Timeout. Couldn't get any response from receiver machine
+ */
 static int open_emissor(int fd) {
 	int res;
 
@@ -89,33 +96,38 @@ static int open_emissor(int fd) {
 	}
 
 	// attempt to send the SET packet and wait for UA response
-	while (conta <= dataLink.numTransmissions) {
+	while (alarmRaisesCnt <= dataLink.numTransmissions) {
+		// send the SET packet
+		// TODO: not sure if this conditional if is needed
 		if (send_flag) {
-			printf("writing message\n");
-			send_SET(fd);
-			alarm(dataLink.timeout);
-			printf("sent alarm\n");
 			send_flag = 0;
+			send_SET(fd);
+			printf("TRANSMITTER: Sent SET packet...\n");
+			alarm(dataLink.timeout);
+			printf("TRANSMITTER: Set alarm\n");
 		}
 
 		unsigned char input;
-		while (1)
-		{
+		// while the state machine doesn't reach END state
+		// or the alarm hasn't raised
+		while (!(st.currentState == END) && !send_flag) {
+			// read single byte
 			res = read(fd, &input, 1);
-			if (res > 0)
-			{
-				//printf("%x\n", input);
+			if (res == 1) // update state machine if read operation was successful
 				(*st.currentStateFunc)(&st, input);
-			}
-			if (st.currentState == END || send_flag)
-				break;
 		}
 
 		if (st.currentState == END){
 			sigignore(SIGALRM);
-			return 1;
+			return 0;
 		}
 	}
+
+	// if the max. number of transmissions was reached...
+	if(alarmRaisesCnt == dataLink.numTransmissions)
+		return -1;
+	else 
+		return 0;
 }
 
 int llopen(int port, int status) {
@@ -169,8 +181,10 @@ int llopen(int port, int status) {
 	// send/wait for initial packets to establish connection
 	if (status == RECEIVER_FLAG)
 		open_receiver(fd);
-	else if (status == EMISSOR_FLAG)
-		open_emissor(fd);
+	else if (status == EMISSOR_FLAG) {
+		int ret = open_emissor(fd);
+		if(ret) return -5; // transmittor gave out, coudln't establish connection
+	}
 
 	// return the file descriptor for the serial port interface
 	return fd;
@@ -306,7 +320,7 @@ void close_receiver(int fd, int status)
 
 	unsigned char input;
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{ //4 tentativas de alarme
 		if (send_flag)
 		{
@@ -358,7 +372,7 @@ void close_emissor(int fd, int status)
 
 	unsigned char input;
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
@@ -411,7 +425,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
 	int i = 0;
-	conta = 1, send_flag = 1;
+	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (ns == 0x40)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
@@ -433,7 +447,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	buffer[length-1] = bcc2;
 	byteStuffing(buffer, length, stuffedBuffer, &newLength);
 
-	while (conta <= dataLink.numTransmissions)
+	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
@@ -653,7 +667,7 @@ int llread(int fd, unsigned char *buffer)
 int llclose(int fd, int status)
 {
 	printf("\nLLCLOSE\n");
-	conta = 1, send_flag = 1;
+	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)
 		close_receiver(fd, status);

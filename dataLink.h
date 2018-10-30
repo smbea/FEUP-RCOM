@@ -22,6 +22,7 @@ enum port{
  * @retval -2 Couldn't open serial port interface
  * @retval -3 Coudln't get current terminal interface configuration
  * @retval -4 Failed to apply terminal interface configuration
+ * @retval -5 Couldn't make a connection between host and guest
  */
 int llopen(int port, int status);
 
