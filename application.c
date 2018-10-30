@@ -23,7 +23,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	packet[2] = (unsigned char)l2;
 	packet[3] = (unsigned char)l1;
 
-	for(h = 0; h < size; h++)
+	for(h = 0; h <= size; h++)
 	{
 		packet[++index] = data[h];
 	}
@@ -57,9 +57,6 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 
 	for(j = 0; j < strlen(sendFile.fileName); j++)
 		packet[++i] = sendFile.fileName[j];
-
-		for(j = 0; j < i; j++)
-			printf("%x\n", packet[j]);
 
 	return i;
 }
@@ -171,9 +168,9 @@ void sendDataPackets(){
 		
 		printf("packet: %d \n ", i);
 		i++;
-
-		/*if(llwrite(application.fd,packet,packetSize)>0)
-			application.sequenceNumber++;*/
+		
+		if(llwrite(application.fd,packet,packetSize)>0)
+			application.sequenceNumber++;
 	}
 }
 
