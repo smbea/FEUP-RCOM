@@ -77,10 +77,10 @@ static int open_emissor(int fd) {
 	// attempt to send the SET packet and wait for UA response
 	while (conta <= dataLink.numTransmissions) {
 		if (send_flag) {
-			printf("writing message\n");
+			//printf("writing message\n");
 			send_SET(fd);
 			alarm(dataLink.timeout);
-			printf("sent alarm\n");
+			//printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -187,7 +187,7 @@ void send_SET(int fd)
 {
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, SET, SENT_BY_EMISSOR ^ SET, FLAG};
 	write(fd, buf, 5);
-	printf("sent SET packet\n");
+	printf("sent SET frame\n");
 }
 
 void send_UA(int fd)
@@ -195,7 +195,7 @@ void send_UA(int fd)
 	unsigned char buf[5] = {FLAG, SENT_BY_RECEPTOR, UA, SENT_BY_RECEPTOR ^ UA, FLAG};
 	write(fd, buf, 5);
 	printf("\n %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
-	printf("sent UA packet\n");
+	printf("sent UA frame\n");
 }
 
 int send_I(int fd, unsigned char *data, int length, byte bcc2)
@@ -216,11 +216,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	res = write(fd, buf, j+1);
 
 
-	if (res > 0)
-	{
-		printf("sent I packet\n");
-		return res;
-	}
+	if (res > 0) return res;
 	return -1;
 }
 
