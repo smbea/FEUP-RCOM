@@ -84,7 +84,6 @@ static int open_emissor(int fd) {
 	// attempt to send the SET packet and wait for UA response
 	while (alarmRaisesCnt <= dataLink.numTransmissions) {
 
-		// TODO: not sure if this conditional if is needed
 		if (send_flag) {
 			send_SET(fd);
 			alarm(dataLink.timeout);
@@ -108,7 +107,7 @@ static int open_emissor(int fd) {
 	}
 
 	// if the max. number of transmissions was reached...
-	if(alarmRaisesCnt == dataLink.numTransmissions)
+	if(alarmRaisesCnt >= dataLink.numTransmissions)
 		return -1;
 	else 
 		return 0;
