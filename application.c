@@ -67,6 +67,7 @@ int main(int argc, char** argv){
 	int port;
 	application.dataSize = 512 ;
 	application.dataPacketSize = application.dataSize + 4;
+	application.sequenceNumber = 0;
 
 	if (argc < 4)
 	{
