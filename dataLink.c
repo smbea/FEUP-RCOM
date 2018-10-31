@@ -35,13 +35,13 @@ void alarmHandler(int signo) {
  * @retval 0 Successfully installed signals handler
  * @retval -1 Failed to install the handler, with errno set
  */
-int alarmSubscribeSignals(int signo) {
+int alarmSubscribeSignals(void * handler) {
 	struct sigaction act;
-	act.sa_handler = alarmHandler;
+	act.sa_handler = handler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
-	return sigaction(signo, &act, NULL);
+	return sigaction(SIGALRM, &act, NULL);
 }
 
 /**
@@ -76,7 +76,7 @@ static int open_emissor(int fd) {
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals(SIGALRM)) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -285,7 +285,7 @@ int close_receiver(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals(SIGALRM)) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -333,7 +333,7 @@ int close_emissor(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals(SIGALRM)) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -402,7 +402,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals(SIGALRM)) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -559,7 +559,7 @@ int llread(int fd, unsigned char *buffer)
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals(SIGALRM)) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
