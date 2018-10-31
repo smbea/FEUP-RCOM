@@ -83,13 +83,11 @@ static int open_emissor(int fd) {
 
 	// attempt to send the SET packet and wait for UA response
 	while (alarmRaisesCnt <= dataLink.numTransmissions) {
-		// send the SET packet
+
 		// TODO: not sure if this conditional if is needed
 		if (send_flag) {
-			//printf("writing message\n");
 			send_SET(fd);
 			alarm(dataLink.timeout);
-			//printf("sent alarm\n");
 			send_flag = 0;
 		}
 
