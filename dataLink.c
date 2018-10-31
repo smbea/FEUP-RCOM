@@ -35,9 +35,9 @@ void alarmHandler(int signo) {
  * @retval 0 Successfully installed signals handler
  * @retval -1 Failed to install the handler, with errno set
  */
-int alarmSubscribeSignals() {
+int alarmSubscribeSignals(void * handler) {
 	struct sigaction act;
-	act.sa_handler = alarmHandler;
+	act.sa_handler = handler;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 
@@ -76,20 +76,17 @@ static int open_emissor(int fd) {
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals()) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
 
 	// attempt to send the SET packet and wait for UA response
 	while (alarmRaisesCnt <= dataLink.numTransmissions) {
-		// send the SET packet
-		// TODO: not sure if this conditional if is needed
+
 		if (send_flag) {
-			//printf("writing message\n");
 			send_SET(fd);
 			alarm(dataLink.timeout);
-			//printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -104,13 +101,13 @@ static int open_emissor(int fd) {
 		}
 
 		if (st.currentState == END){
-			sigignore(SIGALRM);
+			alarmSubscribeSignals(SIG_IGN);
 			return 0;
 		}
 	}
 
 	// if the max. number of transmissions was reached...
-	if(alarmRaisesCnt == dataLink.numTransmissions)
+	if(alarmRaisesCnt >= dataLink.numTransmissions)
 		return -1;
 	else 
 		return 0;
@@ -285,7 +282,7 @@ int close_receiver(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, UA);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals()) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -318,7 +315,7 @@ int close_receiver(int fd, int status)
 		}
 
 		if (st.currentState == END){
-			sigignore(SIGALRM);
+			alarmSubscribeSignals(SIG_IGN);
 			return 0;
 		}
 	}
@@ -333,7 +330,7 @@ int close_emissor(int fd, int status)
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals()) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -367,7 +364,7 @@ int close_emissor(int fd, int status)
 
 		if (st.currentState == END){
 			send_UA(fd);
-			sigignore(SIGALRM);
+			alarmSubscribeSignals(SIG_IGN);
 			return 0;
 		}
 	}
@@ -402,7 +399,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals()) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}
@@ -559,7 +556,7 @@ int llread(int fd, unsigned char *buffer)
 	initStateMachine(&st, SENT_BY_EMISSOR, ns);
 
 	// install handler for alarm signals
-	if(alarmSubscribeSignals()) {
+	if(alarmSubscribeSignals(alarmHandler)) {
 		perror("open_emissor:");
 		return -1;
 	}

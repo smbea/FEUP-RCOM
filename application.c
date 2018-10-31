@@ -67,6 +67,7 @@ int main(int argc, char** argv){
 	int port;
 	application.dataSize = 512 ;
 	application.dataPacketSize = application.dataSize + 4;
+	application.sequenceNumber = 0;
 
 	if (argc < 4)
 	{
@@ -111,10 +112,12 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
-	application.sequenceNumber = 0;
-
-	if(status == TRANSMITTER) sendData();
-	else readData();
+	if(application.fd > 0){
+		if(status == TRANSMITTER) sendData();
+		else readData();
+	}else{
+		printf("Couldn't establish connection with receiver.\n");
+	}
 
 	return 0;
 
