@@ -187,7 +187,7 @@ void readDataPackets(){
 	while(count <= packetsSending){
 		printf("\n %d\n",count);
 		res = llread(application.fd,buffer)-dataPHSize;
-		printf("\n received %d bytes\n", res);
+		printf("received %d bytes\n", res);
 		count++;
 	}
 }
