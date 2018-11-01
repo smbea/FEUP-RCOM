@@ -221,6 +221,8 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	}
 
 	buf[j] = FLAG;
+
+	printf("ns: %d\n",buf[2]);
 	
 	res = write(fd, buf, j+1);
 
