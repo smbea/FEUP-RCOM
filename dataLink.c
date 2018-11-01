@@ -420,7 +420,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
 			alarm(dataLink.timeout); // activa alarme de 3s
 			send_flag = 0;
-			prinf("\n sent \n");
 		}
 
 		while (1)
@@ -428,7 +427,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-							prinf("\n rec: %x \n", singleByte);
 
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
