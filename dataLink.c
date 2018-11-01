@@ -12,6 +12,8 @@
 #include <signal.h>
 
 #define frameSize 522
+#define headerSize 4
+#define tailSize 4
 
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
@@ -549,7 +551,7 @@ int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[518];
+	unsigned char destuffed[frameSize-headerSize];
 	unsigned char buf = 0;
 	int i = 0, k=0;
 
@@ -563,10 +565,10 @@ int llread(int fd, unsigned char *buffer)
 
 	while (1)
 	{
-		res += read(fd, &buf, 1);
+		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x ", buf);
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -599,9 +601,9 @@ int llread(int fd, unsigned char *buffer)
 
 	extractData(destuffed,buffer,destuffedSize);
 	
-	res2 = send_R(fd, bccSuccess,ns);
+	send_R(fd, bccSuccess,ns);
 
-	return res;
+	return i-(headerSize+tailSize);
 }
 
 
