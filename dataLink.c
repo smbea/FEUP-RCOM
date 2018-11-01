@@ -406,7 +406,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		return -1;
 	}
 
-	bcc2 = getBCC(buffer, length-2);
+	bcc2 = getBCC(buffer, length);
 	buffer[length] = bcc2;
 	newLength = byteStuffing(buffer, length+1, stuffedBuffer);
 
@@ -594,7 +594,7 @@ int llread(int fd, unsigned char *buffer)
 	}
 	printf("\n ");*/
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)

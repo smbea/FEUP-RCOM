@@ -182,7 +182,7 @@ void sendDataPackets(){
 void readDataPackets(){
 	int packetsSending = (int) sendFile.fileSize/application.dataSize;
 	int count = 1;
-	unsigned char buffer[application.dataPacketSize+6];
+	unsigned char buffer[application.dataPacketSize+6+1];
 
 	while(count <= packetsSending){
 		printf("\n %d. received %d bytes\n",count, llread(application.fd,buffer)-dataPHSize);
