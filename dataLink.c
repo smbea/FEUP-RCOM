@@ -386,7 +386,7 @@ unsigned char getBCC(unsigned char* buffer, int length)
 int llwrite(int fd, unsigned char *buffer, int length)
 {
 
-	unsigned char stuffedBuffer[260];
+	unsigned char stuffedBuffer[length];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
@@ -549,7 +549,7 @@ int llread(int fd, unsigned char *buffer)
 {
 	int res = 0, res2 = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[258];
+	unsigned char destuffed[518];
 	unsigned char buf = 0;
 	int i = 0, k=0;
 
