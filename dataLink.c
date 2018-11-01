@@ -603,7 +603,7 @@ int llread(int fd, unsigned char *buffer)
 	
 	send_R(fd, bccSuccess,ns);
 
-	return i-(headerSize+tailSize);
+	return i-tailSize;
 }
 
 
