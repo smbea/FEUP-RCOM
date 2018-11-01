@@ -29,9 +29,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	}
 	return index+1;
 
-	for(h =0; h<strlen(packet);h++){
-		printf("%x ",packet[h]);
-	}
+	
 }
 
 
