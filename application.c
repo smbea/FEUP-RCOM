@@ -9,6 +9,8 @@
 #include <string.h>
 #include <signal.h>
 
+#define dataPHSize 4
+
 //untested
 int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 
@@ -167,7 +169,7 @@ void sendDataPackets(){
 	unsigned char packet[application.dataPacketSize];
 	int packetSize;
 
-	//while((res = read(sendFile.fd,&data,application.dataSize))>0){
+	while((res = read(sendFile.fd,&data,application.dataSize))>0){
 		res = read(sendFile.fd,&data,application.dataSize);
 		packetSize = generateDataPacket(data,res,packet);
 		
@@ -175,7 +177,7 @@ void sendDataPackets(){
 			printf("%d. sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
-	//}
+	}
 }
 
 void readDataPackets(){
@@ -183,9 +185,10 @@ void readDataPackets(){
 	int count = 0;
 	unsigned char buffer[application.dataPacketSize+6];
 
-	
-		printf("%d. received %d bytes\n",count, llread(application.fd,buffer));
+	while(count < packetsSending){
+		printf("%d. received %d bytes\n",count-dataPHSize, llread(application.fd,buffer));
 		count++;
+	}
 }
 
 

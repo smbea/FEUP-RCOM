@@ -13,7 +13,7 @@
 
 #define frameSize 522
 #define headerSize 4
-#define tailSize 4
+#define tailSize 2
 
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
