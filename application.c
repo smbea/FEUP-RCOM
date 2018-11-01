@@ -17,7 +17,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	int l2 = size / 256;
 	int l1 = size % 256;
 
-	packet[0] = 0x01;
+	packet[0] = APP_DATA;
 	packet[1] = application.sequenceNumber % 255;
 	
 	packet[2] = (unsigned char)l2;
@@ -155,6 +155,7 @@ void sendControlPacket(int start_end_flag){
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
+
 }
 
 
@@ -179,10 +180,10 @@ void readDataPackets(){
 	int count = 0;
 	unsigned char buffer[application.dataPacketSize+6];
 
-	while(count < packetsSending){
+	//
 		printf("%d . received %d bytes\n",count, llread(application.fd,buffer));
 		count++;
-	}
+	//}
 }
 
 
