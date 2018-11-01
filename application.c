@@ -185,7 +185,7 @@ void readDataPackets(){
 	unsigned char buffer[application.dataPacketSize+6];
 
 	while(count <= packetsSending){
-		printf("%d. received %d bytes\n",count, llread(application.fd,buffer)-dataPHSize);
+		printf("\n %d. received %d bytes\n",count, llread(application.fd,buffer)-dataPHSize);
 		count++;
 	}
 }

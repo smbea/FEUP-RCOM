@@ -506,7 +506,7 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 		}
 		indexD++;
 	}
-	printf("added bytes: %d",i);
+	printf("added bytes: %d",length-i);
 	return indexD;
 }
 
