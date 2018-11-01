@@ -178,6 +178,23 @@ int getFileName(unsigned char* buf, char* fileName)
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
+	char dummy[512];
+	int j = 0;	
+	for( j = 0; j < application.dataPacketSize; j++)
+		printf("%u\n", packet[j]);	
+	int fileNameSize = getFileName(packet, dummy); //há muito provavelmente uma forma melhor de fazer isto(?)
+
+	char fileName[fileNameSize];
+	getFileName(packet, fileName);
+	sendFile.fd = open(fileName, O_WRONLY || O_CREAT, S_IRUSR || S_IWUSR || S_IXUSR);
+
+	if (sendFile.fd < 0)
+		{
+			perror(sendFile.fileName);
+			exit(-1);
+		}
+
+	sendFile.fileSize = getFileSize(sendFile.fd);
 
 }
 
