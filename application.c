@@ -154,6 +154,26 @@ void sendControlPacket(int start_end_flag){
 	llwrite(application.fd, packet, packet_size);
 }
 
+int getFileName(unsigned char* buf, char* fileName)
+{
+	int index = 1, i = 0, fileNameSize= 0;
+	while(1){
+			//printf("dummy2\n");
+	if(buf[index++] == 1)
+	{
+
+		fileNameSize  = (int)buf[index++];
+		printf("size: %d", fileNameSize);
+		for(i = 0; i < fileNameSize; i++){
+			fileName[i] = buf[index++];
+		}
+		break;
+	}
+	else
+		index += ((int)buf[index]) +1; //skips
+	}
+	return i;
+}
 
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
