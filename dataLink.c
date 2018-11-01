@@ -190,6 +190,8 @@ void genNextNr(unsigned char received_ns){
 	else{
 		ns = RR0;
 	}
+
+	printf("\nsuuuuup received ns: %x, nr = %x\n", received_ns, nr);
 }
 
 
@@ -564,7 +566,7 @@ int llread(int fd, unsigned char *buffer)
 
 	while (1)
 	{
-		res = read(fd, &buf, 1);
+		res += read(fd, &buf, 1);
 		if (res > 0)
 		{
 			printf(" %x ", buf);
