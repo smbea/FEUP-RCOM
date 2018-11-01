@@ -112,7 +112,8 @@ int stateBCC(stateMachine *st, byte input) {
 	if(st->currentState != BCC)
 		return -1;
 
-	if(currentType == UA || currentType == SET || currentType == DISC || currentType == RR0 || currentType == RR1){
+	if(currentType == UA || currentType == SET || currentType == DISC || currentType == RR0 || currentType == RR1
+	|| currentType == S0 || currentType == S1){
 		if(input == FLAG) st->currentState = END;
 		else {
 		st->currentState = START;
