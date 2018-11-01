@@ -138,7 +138,7 @@ int sendData(){
 
 int readData(){
 	readControlPacket(start);
-	//readDataPackets();
+	readDataPackets();
 	return 0;
 }
 
@@ -166,10 +166,10 @@ void sendDataPackets(){
 	int packetSize;
 
 	//while((res = read(sendFile.fd,&data,application.dataSize))>0){
-		packetSize = generateDataPacket(data,res,packet);
+		packetSize = generateDataPacket(data,100,packet);
 		
 		if(llwrite(application.fd,packet,packetSize)>0){
-			printf("%d . sent %d bytes\n",application.sequenceNumber,res);
+			printf("%d . sent %d bytes\n",application.sequenceNumber,100);
 			application.sequenceNumber++;
 		}
 	//}
