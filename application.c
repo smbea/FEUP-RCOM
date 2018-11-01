@@ -173,7 +173,7 @@ void sendDataPackets(){
 		packetSize = generateDataPacket(data,res,packet);
 		
 		if(llwrite(application.fd,packet,packetSize)>0){
-			printf("%d. sent %d bytes\n",application.sequenceNumber,res);
+			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
 	}
@@ -184,7 +184,7 @@ void readDataPackets(){
 	int count = 1;
 	unsigned char buffer[application.dataPacketSize+6];
 
-	while(count < packetsSending){
+	while(count <= packetsSending){
 		printf("%d. received %d bytes\n",count, llread(application.fd,buffer)-dataPHSize);
 		count++;
 	}

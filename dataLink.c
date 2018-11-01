@@ -484,6 +484,7 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 	int indexS = 0, indexD = 0;
 	unsigned char escapeChar = 0x7d;
 	unsigned char flagChar = 0x7e;
+	int i = 0;
 
 	for(indexS = 0; indexS < length; indexS++)
 	{
@@ -500,10 +501,12 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 			}else if(stuffedBuffer[indexS+1] == (flagChar ^0x20)){
 				destuffedBuffer[indexD] = flagChar;
 				indexS++;
+				i++;
 			}
 		}
 		indexD++;
 	}
+	printf("added bytes: %d",i);
 	return indexD;
 }
 
@@ -568,7 +571,7 @@ int llread(int fd, unsigned char *buffer)
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			printf(" %x ", buf);
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -605,7 +608,7 @@ int llread(int fd, unsigned char *buffer)
 
 	printf("sizes: i: %d, destuffed: %d", i, destuffedSize);
 
-	return i-tailSize;
+	return destuffedSize-tailSize;
 }
 
 
