@@ -73,11 +73,11 @@ int main(int argc, char** argv){
 	application.dataPacketSize = application.dataSize + 4;
 	application.sequenceNumber = 1;
 
-	if (argc < 4)
-	{
+	if(argc < 3 || (argc < 4 && (atoi(argv[2]) == 0))){
 		printf("Incorrect number of arguments\n");
 		exit(1);
 	}
+	
 
 	//port
 	if (atoi(argv[1]) == 0)
@@ -103,8 +103,8 @@ int main(int argc, char** argv){
 
 	//file
 	sendFile.fileName = argv[3];
-	if(status == TRANSMITTER) sendFile.fd = open(sendFile.fileName,O_RDWR);
-	else sendFile.fd = open(sendFile.fileName,O_WRONLY);
+	if(status == TRANSMITTER) 
+		sendFile.fd = open(sendFile.fileName,O_RDWR);
 
 	if (sendFile.fd < 0)
 	{
