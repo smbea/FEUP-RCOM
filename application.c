@@ -120,7 +120,6 @@ int main(int argc, char** argv){
 		printf("ERROR: It wasn't possible to establish connection. Cannot proceed\n");
 		exit(-1);
 	}
-	application.sequenceNumber = 0;
 
 	if(status == TRANSMITTER) sendData();
 	else readData();
@@ -183,9 +182,11 @@ void readDataPackets(){
 	int packetsSending = (int) sendFile.fileSize/application.dataSize;
 	int count = 1;
 	unsigned char buffer[application.dataPacketSize+6+1];
+	int res = 0;
 
 	while(count <= packetsSending){
-		printf("\n %d. received %d bytes\n",count, llread(application.fd,buffer)-dataPHSize);
+		res = llread(application.fd,buffer)-dataPHSize);
+		printf("\n %d. received %d bytes\n",count, res);
 		count++;
 	}
 }
