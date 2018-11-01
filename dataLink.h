@@ -77,5 +77,6 @@ void atende(int signo);
 unsigned char getBCC(unsigned char* buffer, int length);
 void genNextNs();
 void genNextNr(unsigned char received_ns);
-
+void readDataPackets();
+void readControlPacket(int start_end_flag);
 #endif
