@@ -505,7 +505,6 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 		}
 		indexD++;
 	}
-	printf("added bytes: %d",length-indexD);
 	return indexD;
 }
 
@@ -604,8 +603,6 @@ int llread(int fd, unsigned char *buffer)
 	extractData(destuffed,buffer,destuffedSize);
 	
 	send_R(fd, bccSuccess,ns);
-
-	printf("sizes: i: %d, destuffed: %d", i, destuffedSize);
 
 	return destuffedSize-tailSize;
 }
