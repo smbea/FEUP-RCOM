@@ -568,7 +568,7 @@ int llread(int fd, unsigned char *buffer)
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			//printf(" %x ", buf);
+			printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
