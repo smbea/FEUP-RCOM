@@ -188,10 +188,8 @@ void genNextNr(unsigned char received_ns){
 		nr = RR1;
 	}
 	else{
-		ns = RR0;
+		nr = RR0;
 	}
-
-	printf("\nsuuuuup received ns: %x, nr = %x\n", received_ns, nr);
 }
 
 
@@ -513,7 +511,6 @@ int send_R(int fd, int success, unsigned char received_ns)
 	if(success)
 	{
 		genNextNr(received_ns);
-		printf("ns: %x, nr: %x\n", received_ns, nr);
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
