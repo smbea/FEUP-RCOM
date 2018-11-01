@@ -388,7 +388,7 @@ unsigned char getBCC(unsigned char* buffer, int length)
 int llwrite(int fd, unsigned char *buffer, int length)
 {
 
-	unsigned char stuffedBuffer[length];
+	unsigned char stuffedBuffer[2*length];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
@@ -407,8 +407,8 @@ int llwrite(int fd, unsigned char *buffer, int length)
 	}
 
 	bcc2 = getBCC(buffer, length-2);
-	buffer[length-1] = bcc2;
-	byteStuffing(buffer, length, stuffedBuffer, &newLength);
+	buffer[length] = bcc2;
+	newLength = byteStuffing(buffer, length+1, stuffedBuffer);
 
 	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
@@ -445,7 +445,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 }
 
 
-void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength)
+int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer)
 {
 	/**
 	 * Compute the BCC
@@ -476,7 +476,8 @@ void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffe
 			stuffedBuffer[j] = buffer[i];
 		}
 	}
-	(*newLength) = j;
+
+	return j;
 }
 
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer)
@@ -550,7 +551,7 @@ unsigned char * extractData(unsigned char * buffer, unsigned char * data, int le
 
 int llread(int fd, unsigned char *buffer)
 {
-	int res = 0, res2 = 0, destuffedSize;
+	int res = 0, destuffedSize;
 	int bccSuccess = 0;
 	unsigned char destuffed[frameSize-headerSize];
 	unsigned char buf = 0;

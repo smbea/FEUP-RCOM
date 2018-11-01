@@ -165,7 +165,7 @@ void readControlPacket(int start_end_flag){
 
 void sendDataPackets(){
 	int res = 0;
-	unsigned char data[application.dataSize];
+	unsigned char data[application.dataSize+1];
 	unsigned char packet[application.dataPacketSize];
 	int packetSize;
 
