@@ -484,7 +484,6 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 	int indexS = 0, indexD = 0;
 	unsigned char escapeChar = 0x7d;
 	unsigned char flagChar = 0x7e;
-	int i = 0;
 
 	for(indexS = 0; indexS < length; indexS++)
 	{
@@ -501,12 +500,11 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 			}else if(stuffedBuffer[indexS+1] == (flagChar ^0x20)){
 				destuffedBuffer[indexD] = flagChar;
 				indexS++;
-				i++;
 			}
 		}
 		indexD++;
 	}
-	printf("added bytes: %d",length-i);
+	printf("added bytes: %d",length-indexD);
 	return indexD;
 }
 
