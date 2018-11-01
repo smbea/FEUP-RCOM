@@ -221,8 +221,6 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	}
 
 	buf[j] = FLAG;
-
-	printf("ns: %x\n",buf[2]);
 	
 	res = write(fd, buf, j+1);
 
@@ -513,6 +511,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 	if(success)
 	{
 		genNextNr(received_ns);
+		printf("ns: %x, nr: %x\n", received_ns, nr);
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
@@ -603,7 +602,7 @@ int llread(int fd, unsigned char *buffer)
 	
 	res2 = send_R(fd, bccSuccess,ns);
 
-	return res2;
+	return res;
 }
 
 
