@@ -135,14 +135,15 @@ int sendData(){
 	return 0;
 }
 
-//untested
+
 int readData(){
 	readControlPacket(start);
+	readDataPackets();
 	return 0;
 }
 
 
-//untested
+
 void sendControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	int packet_size = generateControlPacket(start, packet);
@@ -150,13 +151,13 @@ void sendControlPacket(int start_end_flag){
 	llwrite(application.fd, packet, packet_size);
 }
 
-//untested
+
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
 }
 
-//untested
+
 void sendDataPackets(){
 	int res = 0;
 	unsigned char data[application.dataSize];
@@ -170,6 +171,17 @@ void sendDataPackets(){
 			printf("%d . sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
+	}
+}
+
+void readDataPackets(){
+	int packetsSending = (int) sendFile.fileSize/application.dataSize;
+	int count = 0;
+	unsigned char buffer[application.dataPacketSize+6];
+
+	while(count < packetsSending){
+		printf("%d . received %d bytes\n",count, llread(application.fd,buffer));
+		count++;
 	}
 }
 
