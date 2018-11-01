@@ -222,7 +222,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 
 	buf[j] = FLAG;
 
-	printf("ns: %d\n",buf[2]);
+	printf("ns: %x\n",buf[2]);
 	
 	res = write(fd, buf, j+1);
 
@@ -555,7 +555,7 @@ int llread(int fd, unsigned char *buffer)
 	unsigned char buf = 0;
 	int i = 0, k=0;
 
-	initStateMachine(&st, SENT_BY_EMISSOR, ns);
+	initStateMachineData(&st, SENT_BY_EMISSOR);
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
