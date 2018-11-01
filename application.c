@@ -178,8 +178,18 @@ void sendDataPackets(){
 	}
 }
 
+int roundExcess(int a, int b)
+{
+		int quocInt = (int) a/b;
+		double quocDouble = (double)((double)a/(double)b);
+		if((quocDouble - (double)quocInt) != 0)
+			return quocInt + 1;
+		else
+			return quocInt;
+}
+
 void readDataPackets(){
-	int packetsSending = (int) sendFile.fileSize/application.dataSize;
+	int packetsSending = roundExcess(sendFile.fileSize, application.dataSize);
 	int count = 1;
 	unsigned char buffer[application.dataPacketSize+6+1];
 	int res = 0;
