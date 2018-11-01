@@ -603,6 +603,8 @@ int llread(int fd, unsigned char *buffer)
 	
 	send_R(fd, bccSuccess,ns);
 
+	printf("sizes: i: %d, destuffed: %d", i, destuffedSize);
+
 	return i-tailSize;
 }
 

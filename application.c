@@ -71,7 +71,7 @@ int main(int argc, char** argv){
 	int port;
 	application.dataSize = 512 ;
 	application.dataPacketSize = application.dataSize + 4;
-	application.sequenceNumber = 0;
+	application.sequenceNumber = 1;
 
 	if (argc < 4)
 	{
@@ -170,7 +170,6 @@ void sendDataPackets(){
 	int packetSize;
 
 	while((res = read(sendFile.fd,&data,application.dataSize))>0){
-		res = read(sendFile.fd,&data,application.dataSize);
 		packetSize = generateDataPacket(data,res,packet);
 		
 		if(llwrite(application.fd,packet,packetSize)>0){
@@ -182,7 +181,7 @@ void sendDataPackets(){
 
 void readDataPackets(){
 	int packetsSending = (int) sendFile.fileSize/application.dataSize;
-	int count = 0;
+	int count = 1;
 	unsigned char buffer[application.dataPacketSize+6];
 
 	while(count < packetsSending){
