@@ -10,7 +10,6 @@ typedef enum st {
 } State;
 
 
-
 // Possible values for the field Address
 enum AddressField {
 	SENT_BY_EMISSOR = 0x03,
@@ -55,6 +54,7 @@ typedef struct stateMachine {
  * @return int
  */
 int initStateMachine(stateMachine *st, unsigned char r_e_flag, unsigned char type);
+int initStateMachineData(stateMachine *st, unsigned char r_e_char);
 
 int stateStart(stateMachine *st, byte input);
 int stateFlag(stateMachine *st, byte input);

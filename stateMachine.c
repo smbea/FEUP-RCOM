@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 
-
+int isData = 0;
 
 int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char type) {
 	st->currentState = START;
@@ -15,6 +15,20 @@ int initStateMachine(stateMachine *st, unsigned char r_e_char, unsigned char typ
 	currentA = r_e_char;
 
 	currentType = type;
+
+	bccCheck = 0;
+
+	return 0;
+}
+
+int initStateMachineData(stateMachine *st, unsigned char r_e_char) {
+	st->currentState = START;
+	st->currentStateFunc = &stateStart;
+	st->index = 0;
+
+	currentA = r_e_char;
+
+	isData = 1;
 
 	bccCheck = 0;
 
@@ -67,8 +81,13 @@ int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-	if(input == currentType) {
+	if(input == currentType ) {
 		printf("	Transitioned to c_rcv state\n");
+		st->currentState = C_RCV;
+		st->currentStateFunc = &stateProtection;
+	} else if(isData == 1) {
+		printf("	Transitioned to c_rcv state\n");
+		currentType = input;
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
 	} else if(input == FLAG) {
@@ -115,8 +134,8 @@ int stateBCC(stateMachine *st, byte input) {
 	if(currentType == UA || currentType == SET || currentType == DISC || currentType == RR0 || currentType == RR1){
 		if(input == FLAG) st->currentState = END;
 		else {
-		st->currentState = START;
-		st->currentStateFunc = &stateStart;
+			st->currentState = START;
+			st->currentStateFunc = &stateStart;
 		}
 	}else{
 		st->currentState = DATA;

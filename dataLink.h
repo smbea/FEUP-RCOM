@@ -10,7 +10,7 @@ struct linkLayer {
 	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
 	unsigned int timeout; /*Valor do temporizador: 1 s*/	
 	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/	
-	unsigned char frame[512]; /*Trama*/	
+	unsigned char frame[518]; /*Trama*/	
 } dataLink;
 
 /* global variable holding the state machine */
@@ -30,7 +30,8 @@ enum port{
  * @brief 
  * 
  * @param port 
- * @param status 
+ * @param status
+ * @return int Upon success returns the file descriptor for the serial port
  * @retval -1 Unknown port
  * @retval -2 Couldn't open serial port interface
  * @retval -3 Coudln't get current terminal interface configuration
@@ -70,11 +71,12 @@ int llclose(int fd, int r_e_flag);
 void send_SET(int fd);
 void send_UA(int fd);
 int send_I(int fd, unsigned char *data, int length, byte bcc2);
-void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength);
+int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer);
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer);
 void atende(int signo);
 unsigned char getBCC(unsigned char* buffer, int length);
 void genNextNs();
 void genNextNr(unsigned char received_ns);
-
+void readDataPackets();
+void readControlPacket(int start_end_flag);
 #endif

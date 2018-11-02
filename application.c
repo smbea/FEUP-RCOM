@@ -1,4 +1,5 @@
 #include "application.h"
+#include "math.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -9,6 +10,8 @@
 #include <string.h>
 #include <signal.h>
 
+#define dataPHSize 4
+
 //untested
 int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 
@@ -17,7 +20,7 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 	int l2 = size / 256;
 	int l1 = size % 256;
 
-	packet[0] = 0x01;
+	packet[0] = APP_DATA;
 	packet[1] = application.sequenceNumber % 255;
 	
 	packet[2] = (unsigned char)l2;
@@ -28,6 +31,8 @@ int generateDataPacket(unsigned char* data, int size, unsigned char* packet){
 		packet[++index] = data[h];
 	}
 	return index+1;
+
+	
 }
 
 
@@ -43,20 +48,27 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 		packet[0] = APP_END;
 
 
+	// File size information
 	packet[++i] = fileSizeIndicator;
-	packet[++i] = sizeof(sendFile.fileSize);
+	int s = (log2(sendFile.fileSize))/ 8 + 1;
+	packet[++i] = s;
 
-	int s = sizeof(sendFile.fileSize);
-
-	for(i = 3; s-- > 0 ; i++){
-		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
+	for(i = 3; s > 0; i++, s--){
+		packet[i] = (sendFile.fileSize>>((s-1)*8))&0xff;
 	}
 
-	packet[++i] = fileNameIndicator;
+	// File name field
+	packet[i] = fileNameIndicator;
 	packet[++i] = (unsigned char)strlen(sendFile.fileName);
 
-	for(j = 0; j < strlen(sendFile.fileName); j++)
-		packet[++i] = sendFile.fileName[j];
+	for(j = 0, i++; j < strlen(sendFile.fileName); j++, i++)
+		packet[i] = sendFile.fileName[j];
+	
+	printf("-----------Control packet----------\n");
+	for(j = 0; j < i; j++)
+		printf("%x ", packet[j]);
+	
+	printf("\n----------- END Control packet----------\n");
 
 	return i;
 }
@@ -67,13 +79,13 @@ int main(int argc, char** argv){
 	int port;
 	application.dataSize = 512 ;
 	application.dataPacketSize = application.dataSize + 4;
-	application.sequenceNumber = 0;
+	application.sequenceNumber = 1;
 
-	if (argc < 4)
-	{
+	if(argc < 3 || (argc < 4 && (atoi(argv[2]) == 0))){
 		printf("Incorrect number of arguments\n");
 		exit(1);
 	}
+	
 
 	//port
 	if (atoi(argv[1]) == 0)
@@ -99,8 +111,8 @@ int main(int argc, char** argv){
 
 	//file
 	sendFile.fileName = argv[3];
-	if(status == TRANSMITTER) sendFile.fd = open(sendFile.fileName,O_RDWR);
-	else sendFile.fd = open(sendFile.fileName,O_WRONLY);
+	if(status == TRANSMITTER) 
+		sendFile.fd = open(sendFile.fileName,O_RDWR);
 
 	if (sendFile.fd < 0)
 	{
@@ -112,12 +124,13 @@ int main(int argc, char** argv){
 
 	//llopen
 	application.fd = llopen(port, status);
-	if(application.fd > 0){
-		if(status == TRANSMITTER) sendData();
-		else readData();
-	}else{
-		printf("Couldn't establish connection with receiver.\n");
+	if(application.fd < 0) {
+		printf("ERROR: It wasn't possible to establish connection. Cannot proceed\n");
+		exit(-1);
 	}
+
+	if(status == TRANSMITTER) sendData();
+	else readData();
 
 	return 0;
 
@@ -125,22 +138,23 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
-	printf("Sent control packet\n");
 	sendControlPacket(start);
+	printf("Sent control packet\n");
 
 	printf("Begining to send data packets\n");
 	sendDataPackets();
 	return 0;
 }
 
-//untested
+
 int readData(){
 	readControlPacket(start);
+	readDataPackets();
 	return 0;
 }
 
 
-//untested
+
 void sendControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	int packet_size = generateControlPacket(start, packet);
@@ -148,16 +162,54 @@ void sendControlPacket(int start_end_flag){
 	llwrite(application.fd, packet, packet_size);
 }
 
-//untested
+int getFileName(unsigned char* buf, char* fileName)
+{
+	int index = 1, i = 0, fileNameSize= 0;
+	while(1){
+			//printf("dummy2\n");
+	if(buf[index++] == 1)
+	{
+
+		fileNameSize  = (int)buf[index++];
+		printf("size: %d", fileNameSize);
+		for(i = 0; i < fileNameSize; i++){
+			fileName[i] = buf[index++];
+		}
+		break;
+	}
+	else
+		index += ((int)buf[index]) +1; //skips
+	}
+	return i;
+}
+
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
 	llread(application.fd, packet);
+	char dummy[512];
+	int j = 0;	
+	for( j = 0; j < application.dataPacketSize; j++)
+		printf("%u\n", packet[j]);	
+	int fileNameSize = getFileName(packet, dummy); //há muito provavelmente uma forma melhor de fazer isto(?)
+
+	char fileName[fileNameSize];
+	getFileName(packet, fileName);
+	sendFile.fd = open(fileName, O_WRONLY || O_CREAT, S_IRUSR || S_IWUSR || S_IXUSR);
+
+	if (sendFile.fd < 0)
+		{
+			perror(sendFile.fileName);
+			exit(-1);
+		}
+
+	sendFile.fileSize = getFileSize(sendFile.fd);
+
 }
 
-//untested
+
 void sendDataPackets(){
 	int res = 0;
-	unsigned char data[application.dataSize];
+	unsigned char data[application.dataSize+1];
 	unsigned char packet[application.dataPacketSize];
 	int packetSize;
 
@@ -165,9 +217,33 @@ void sendDataPackets(){
 		packetSize = generateDataPacket(data,res,packet);
 		
 		if(llwrite(application.fd,packet,packetSize)>0){
-			printf("%d . sent %d bytes\n",application.sequenceNumber,res);
+			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
+	}
+}
+
+int roundExcess(int a, int b)
+{
+		int quocInt = (int) a/b;
+		double quocDouble = (double)((double)a/(double)b);
+		if((quocDouble - (double)quocInt) != 0)
+			return quocInt + 1;
+		else
+			return quocInt;
+}
+
+void readDataPackets(){
+	int packetsSending = roundExcess(sendFile.fileSize, application.dataSize);
+	int count = 1;
+	unsigned char buffer[application.dataPacketSize+6+1];
+	int res = 0;
+
+	while(count <= packetsSending){
+		printf("\n %d\n",count);
+		res = llread(application.fd,buffer)-dataPHSize;
+		printf("received %d bytes\n", res);
+		count++;
 	}
 }
 

@@ -12,6 +12,8 @@
 #include <signal.h>
 
 #define frameSize 522
+#define headerSize 4
+#define tailSize 2
 
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
@@ -188,7 +190,7 @@ void genNextNr(unsigned char received_ns){
 		nr = RR1;
 	}
 	else{
-		ns = RR0;
+		nr = RR0;
 	}
 }
 
@@ -386,14 +388,14 @@ unsigned char getBCC(unsigned char* buffer, int length)
 int llwrite(int fd, unsigned char *buffer, int length)
 {
 
-	unsigned char stuffedBuffer[260];
+	unsigned char stuffedBuffer[2*length];
 	int res2 = 0, res1 = 0, newLength = length;
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
 	int i = 0;
 	alarmRaisesCnt = 1, send_flag = 1;
 
-	if (ns == 0x40)
+	if (ns == S1)
 		initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 	else
 		initStateMachine(&st, SENT_BY_EMISSOR, RR1);
@@ -404,9 +406,9 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		return -1;
 	}
 
-	bcc2 = getBCC(buffer, length-2);
-	buffer[length-1] = bcc2;
-	byteStuffing(buffer, length, stuffedBuffer, &newLength);
+	bcc2 = getBCC(buffer, length);
+	buffer[length] = bcc2;
+	newLength = byteStuffing(buffer, length+1, stuffedBuffer);
 
 	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
@@ -425,13 +427,14 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				//printf("%x\n", input);
+
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
 
 			if (st.currentState == END || send_flag)
 				break;
+
 		}
 
 		if (st.currentState == END)
@@ -443,7 +446,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 }
 
 
-void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer, int* newLength)
+int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer)
 {
 	/**
 	 * Compute the BCC
@@ -474,7 +477,8 @@ void byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffe
 			stuffedBuffer[j] = buffer[i];
 		}
 	}
-	(*newLength) = j;
+
+	return j;
 }
 
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer)
@@ -547,13 +551,13 @@ unsigned char * extractData(unsigned char * buffer, unsigned char * data, int le
 
 int llread(int fd, unsigned char *buffer)
 {
-	int res = 0, res2 = 0, destuffedSize;
+	int res = 0, destuffedSize;
 	int bccSuccess = 0;
-	unsigned char destuffed[258];
+	unsigned char destuffed[frameSize-headerSize];
 	unsigned char buf = 0;
 	int i = 0, k=0;
 
-	initStateMachine(&st, SENT_BY_EMISSOR, ns);
+	initStateMachineData(&st, SENT_BY_EMISSOR);
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
@@ -591,7 +595,7 @@ int llread(int fd, unsigned char *buffer)
 	}
 	printf("\n ");*/
 
-	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-2);
+	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
@@ -599,9 +603,9 @@ int llread(int fd, unsigned char *buffer)
 
 	extractData(destuffed,buffer,destuffedSize);
 	
-	res2 = send_R(fd, bccSuccess,ns);
+	send_R(fd, bccSuccess,ns);
 
-	return res2;
+	return destuffedSize-tailSize;
 }
 
 
