@@ -171,7 +171,6 @@ int getFileInfo(unsigned char* buf, unsigned char* file, int info)
 		{
 
 			fileInfoSize  = (int)buf[index++];
-			printf("size: %d\n", fileInfoSize);
 			for(i = 0; i < fileInfoSize; i++){
 				file[i] = buf[index++];
 			}
@@ -192,7 +191,6 @@ int convertS2int(unsigned char* s, int t)
 	for(i = t - 2; i >= 0; i--)
 	{
 		final += s[i] * pow(256,pot);
-		printf("final: %d		, %x\n", final, s[i]);
 		pot++;
 	}
 	return final;
@@ -208,7 +206,6 @@ void readControlPacket(int start_end_flag){
 	int sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
 
 
-	printf("hello: %s\n", fileSize);
 
 	sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
 	if (sendFile.fd < 0)
@@ -218,7 +215,6 @@ void readControlPacket(int start_end_flag){
 		}
 
 	sendFile.fileSize = convertS2int(fileSize, sizeofSize);
-	printf("size: yes: %d", sendFile.fileSize);
 }
 
 
