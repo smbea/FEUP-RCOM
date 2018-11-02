@@ -1,4 +1,5 @@
 #include "application.h"
+#include "math.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -47,20 +48,27 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 		packet[0] = APP_END;
 
 
+	// File size information
 	packet[++i] = fileSizeIndicator;
-	packet[++i] = sizeof(sendFile.fileSize);
+	int s = (log2(sendFile.fileSize))/ 8 + 1;
+	packet[++i] = s;
 
-	int s = sizeof(sendFile.fileSize);
-
-	for(i = 3; s-- > 0 ; i++){
-		packet[i] = (sendFile.fileSize>>(s*8))&0xff;
+	for(i = 3; s > 0; i++, s--){
+		packet[i] = (sendFile.fileSize>>((s-1)*8))&0xff;
 	}
 
-	packet[++i] = fileNameIndicator;
+	// File name field
+	packet[i] = fileNameIndicator;
 	packet[++i] = (unsigned char)strlen(sendFile.fileName);
 
-	for(j = 0; j < strlen(sendFile.fileName); j++)
-		packet[++i] = sendFile.fileName[j];
+	for(j = 0, i++; j < strlen(sendFile.fileName); j++, i++)
+		packet[i] = sendFile.fileName[j];
+	
+	printf("-----------Control packet----------\n");
+	for(j = 0; j < i; j++)
+		printf("%x ", packet[j]);
+	
+	printf("\n----------- END Control packet----------\n");
 
 	return i;
 }
@@ -130,8 +138,8 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
-	printf("Sent control packet\n");
 	sendControlPacket(start);
+	printf("Sent control packet\n");
 
 	printf("Begining to send data packets\n");
 	sendDataPackets();
