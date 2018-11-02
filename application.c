@@ -254,6 +254,7 @@ void readDataPackets(){
 	while(count <= packetsSending){
 		printf("\n %d\n",count);
 		res = llread(application.fd,buffer)-dataPHSize;
+		write(sendFile.fd, buffer + dataPHSize, res);
 		printf("received %d bytes\n", res);
 		count++;
 	}
