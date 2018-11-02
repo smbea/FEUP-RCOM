@@ -22,7 +22,7 @@ unsigned char nr = RR1;
 
 /**
  * @brief Handler to be called upon alarm signals
- * 
+ *
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
@@ -33,7 +33,7 @@ void alarmHandler(int signo) {
 
 /**
  * @brief Subscribes to alarm signals
- * 
+ *
  * @retval 0 Successfully installed signals handler
  * @retval -1 Failed to install the handler, with errno set
  */
@@ -49,7 +49,7 @@ int alarmSubscribeSignals(void * handler) {
 /**
  * @brief Processes the expected SET packet sent by the transmitter machine
  * One the SET packet is received and acknowledged, it sends an UA packet
- * 
+ *
  * @param fd File descriptor for the serial port interface used by this host machine
  */
 static void open_receiver(int fd) {
@@ -66,8 +66,8 @@ static void open_receiver(int fd) {
 
 /**
  * @brief Sends a SET packet through the serial port and waits for an acknowledgement UA packet
- * 
- * @param fd 
+ *
+ * @param fd
  * @retval 0 Connection established successfully
  * @retval -1 Timeout. Couldn't get any response from receiver machine
  */
@@ -111,7 +111,7 @@ static int open_emissor(int fd) {
 	// if the max. number of transmissions was reached...
 	if(alarmRaisesCnt >= dataLink.numTransmissions)
 		return -1;
-	else 
+	else
 		return 0;
 }
 
@@ -120,7 +120,7 @@ int llopen(int port, int status) {
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
 	dataLink.numTransmissions=3;
-	
+
 	int fd; // file descriptor for terminal
 	char *portName; // path to serial port interface
 
@@ -223,7 +223,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	}
 
 	buf[j] = FLAG;
-	
+
 	res = write(fd, buf, j+1);
 
 
@@ -435,14 +435,18 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			if (st.currentState == END || send_flag)
 				break;
 
+			if(st.currentState == REJ)
+				return -1;
+
 		}
 
 		if (st.currentState == END)
-		{	genNextNs();
+		{
+			genNextNs();
 			return res1;
 		}
 	}
-	return res1;
+	return -1;
 }
 
 
@@ -532,6 +536,8 @@ int send_R(int fd, int success, unsigned char received_ns)
 			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
 		printf("Sent REJ: %x\n", buf[2]);
+		write(fd, buf, 5);
+		return -1;
 	}
 
 	write(fd, buf, 5);
@@ -582,9 +588,9 @@ int llread(int fd, unsigned char *buffer)
 			dataLink.frame[i] = buf;
 			i++;
 		}
-				
+
 	}
-	
+
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
@@ -602,8 +608,9 @@ int llread(int fd, unsigned char *buffer)
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 
 	extractData(destuffed,buffer,destuffedSize);
-	
-	send_R(fd, bccSuccess,ns);
+
+	if(send_R(fd, bccSuccess,ns) < 0)
+		return -1;
 
 	return destuffedSize-tailSize;
 }

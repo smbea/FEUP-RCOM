@@ -231,6 +231,10 @@ void sendDataPackets(){
 			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
+		else{
+			printf("Alarm count reached maximum value: Exit(1)\n");
+			exit(1);
+		}
 	}
 }
 
@@ -254,9 +258,14 @@ void readDataPackets(){
 	while(count <= packetsSending){
 		printf("\n %d\n",count);
 		res = llread(application.fd,buffer)-dataPHSize;
-		write(sendFile.fd, buffer + dataPHSize, res);
-		printf("received %d bytes\n", res);
-		count++;
+		if(res > 0){
+			write(sendFile.fd, buffer + dataPHSize, res);
+			printf("received %d bytes\n", res);
+			count++;
+		}
+		else{
+			printf("Packet was rejected, resend!\n");
+		}
 	}
 }
 

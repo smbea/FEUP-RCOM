@@ -51,7 +51,7 @@ int stateStart(stateMachine *st, byte input) {
 		st->currentStateFunc = &stateFlag;
 	} else {
 		// stays on Start state
-		printf("	Staying in start state\n");
+		//printf("	Staying in start state\n");
 	}
 	return 0;
 }
@@ -81,7 +81,7 @@ int stateAddress(stateMachine *st, byte input) {
 	if(st->currentState != A_RCV)
 		return -1;
 
-	if(input == currentType ) {
+	if(input == currentType) {
 		printf("	Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
@@ -95,6 +95,10 @@ int stateAddress(stateMachine *st, byte input) {
 		printf("	Got FLAG, back to flag state state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
+	}
+	else if(currentType == RR0 || currentType == RR1){
+		st->currentState = REJ0;
+		return 1;
 	}
 	else {
 		// unknown input
