@@ -253,7 +253,7 @@ void readDataPackets(){
 	int count = 1;
 	unsigned char buffer[application.dataPacketSize+6+1];
 	int res = 0;
-	printf("hello");
+	printf("Reading data packets\n");
 
 	while(count <= packetsSending){
 		printf("\n %d\n",count);
@@ -268,7 +268,6 @@ void readDataPackets(){
 		
 		}
 		else{
-			printf("\n %d: ",res);
 			printf("Packet was rejected, resend!\n");
 		}
 	}
