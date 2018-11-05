@@ -18,7 +18,7 @@
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
-unsigned char nr = RR1;
+unsigned char nr = RR0;
 
 /**
  * @brief Handler to be called upon alarm signals
@@ -514,7 +514,6 @@ int send_R(int fd, int success, unsigned char received_ns)
 	unsigned char buf[5] = {FLAG, SENT_BY_EMISSOR, 0, 0, FLAG};
 	if(success)
 	{
-		genNextNr(received_ns);
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
@@ -554,8 +553,10 @@ int llread(int fd, unsigned char *buffer)
 	int res = 0, destuffedSize;
 	int bccSuccess = 0;
 	unsigned char destuffed[frameSize-headerSize];
-	unsigned char buf = 0;
-	int i = 0, k=0;
+	unsigned char buf = 0, received_ns;
+        int i = 0, k=0;
+       int duplicate= 0;
+
 
 	initStateMachineData(&st, SENT_BY_EMISSOR);
 
@@ -578,6 +579,21 @@ int llread(int fd, unsigned char *buffer)
 		if (st.currentState == END)
 			break;
 
+		if (st.currentState == C_RCV){
+                              received_ns = buf;
+                      //if  duplicate
+                            if(!(nr == RR0 && buf == S0) && !(nr == RR1 && buf == S1)){
+                                       duplicate = 1;
+                                      printf("\n duplicate: ");
+                              }
+
+                      else{
+                            if(buf == S0) nr = RR1;
+                               else nr = RR0;
+                       }
+               }
+
+		
 		if (st.currentState == DATA){
 			dataLink.frame[i] = buf;
 			i++;
@@ -600,10 +616,19 @@ int llread(int fd, unsigned char *buffer)
 
 	if(calculatedBcc == receivedBcc)
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
+	 else{
+               if(received_ns == S0) nr = RR0;
+               else if(received_ns == S1) nr = RR1;
+
+       }
+
 
 	extractData(destuffed,buffer,destuffedSize);
 	
 	send_R(fd, bccSuccess,ns);
+if(duplicate) {
+               return -2;
+       }
 
 	return destuffedSize-tailSize;
 }
