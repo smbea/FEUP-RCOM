@@ -6,7 +6,7 @@ typedef unsigned char byte;
 
 // Enumerator with all possible machine states
 typedef enum st {
-	START, FLAG_RCV, A_RCV, C_RCV, BCC, BCC1, DATA,DESTUFFING, BCC2 ,END, FLAG_END
+	START, FLAG_RCV, A_RCV, C_RCV, BCC, BCC1, DATA,DESTUFFING, BCC2 ,END, FLAG_END, REJ
 } State;
 
 

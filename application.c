@@ -231,6 +231,10 @@ void sendDataPackets(){
 			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
+		else{
+			printf("Alarm count reached maximum value: Exit(1)\n");
+			exit(1);
+		}
 	}
 }
 

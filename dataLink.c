@@ -22,7 +22,7 @@ unsigned char nr = RR0;
 
 /**
  * @brief Handler to be called upon alarm signals
- * 
+ *
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
@@ -33,7 +33,7 @@ void alarmHandler(int signo) {
 
 /**
  * @brief Subscribes to alarm signals
- * 
+ *
  * @retval 0 Successfully installed signals handler
  * @retval -1 Failed to install the handler, with errno set
  */
@@ -49,7 +49,7 @@ int alarmSubscribeSignals(void * handler) {
 /**
  * @brief Processes the expected SET packet sent by the transmitter machine
  * One the SET packet is received and acknowledged, it sends an UA packet
- * 
+ *
  * @param fd File descriptor for the serial port interface used by this host machine
  */
 static void open_receiver(int fd) {
@@ -66,8 +66,8 @@ static void open_receiver(int fd) {
 
 /**
  * @brief Sends a SET packet through the serial port and waits for an acknowledgement UA packet
- * 
- * @param fd 
+ *
+ * @param fd
  * @retval 0 Connection established successfully
  * @retval -1 Timeout. Couldn't get any response from receiver machine
  */
@@ -111,7 +111,7 @@ static int open_emissor(int fd) {
 	// if the max. number of transmissions was reached...
 	if(alarmRaisesCnt >= dataLink.numTransmissions)
 		return -1;
-	else 
+	else
 		return 0;
 }
 
@@ -120,7 +120,7 @@ int llopen(int port, int status) {
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
 	dataLink.numTransmissions=3;
-	
+
 	int fd; // file descriptor for terminal
 	char *portName; // path to serial port interface
 
@@ -223,7 +223,7 @@ int send_I(int fd, unsigned char *data, int length, byte bcc2)
 	}
 
 	buf[j] = FLAG;
-	
+
 	res = write(fd, buf, j+1);
 
 
@@ -389,7 +389,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 {
 
 	unsigned char stuffedBuffer[2*length];
-	int res2 = 0, res1 = 0, newLength = length;
+	int res2 = 0, res1 = 0, rejFail = 0, newLength = length;
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
 	int i = 0;
@@ -427,22 +427,38 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-
+				printf("%x  ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
 
-			if (st.currentState == END || send_flag)
+			if (st.currentState == END || send_flag){
+					if (st.currentState == END ) printf("\n end \n");
 				break;
+			}
 
+			if(st.currentState == REJ)
+				rejFail = 1;
 		}
 
-		if (st.currentState == END)
-		{	genNextNs();
+		if (st.currentState == END && !rejFail)
+		{
+			alarmSubscribeSignals(SIG_IGN);
+			genNextNs();
 			return res1;
 		}
+		else{
+			
+			if (ns == S1)
+				initStateMachine(&st, SENT_BY_EMISSOR, RR0);
+			else
+				initStateMachine(&st, SENT_BY_EMISSOR, RR1);
+			rejFail = 0;
+		}
 	}
-	return res1;
+	printf("\n return \n");
+
+	return -1;
 }
 
 
@@ -531,6 +547,8 @@ int send_R(int fd, int success, unsigned char received_ns)
 			buf[3] = REJ0 ^ SENT_BY_EMISSOR;
 		}
 		printf("Sent REJ: %x\n", buf[2]);
+		write(fd, buf, 5);
+		return -1;
 	}
 
 	write(fd, buf, 5);
@@ -598,9 +616,9 @@ int llread(int fd, unsigned char *buffer)
 			dataLink.frame[i] = buf;
 			i++;
 		}
-				
+
 	}
-	
+
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	//testing////////////////////////////
@@ -629,6 +647,9 @@ int llread(int fd, unsigned char *buffer)
 if(duplicate) {
                return -2;
        }
+
+	if(send_R(fd, bccSuccess,ns) < 0)
+		return -1;
 
 	return destuffedSize-tailSize;
 }
