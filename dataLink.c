@@ -389,7 +389,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 {
 
 	unsigned char stuffedBuffer[2*length];
-	int res2 = 0, res1 = 0, newLength = length;
+	int res2 = 0, res1 = 0, rejFail = 0, newLength = length;
 	unsigned char bcc2;
 	unsigned char singleByte = 0;
 	int i = 0;
@@ -427,25 +427,37 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-
+				printf("%x  ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
 
-			if (st.currentState == END || send_flag)
+			if (st.currentState == END || send_flag){
+					if (st.currentState == END ) printf("\n end \n");
 				break;
+			}
 
 			if(st.currentState == REJ)
-				return -1;
-
+				rejFail = 1;
 		}
 
-		if (st.currentState == END)
+		if (st.currentState == END && !rejFail)
 		{
+			alarmSubscribeSignals(SIG_IGN);
 			genNextNs();
 			return res1;
 		}
+		else{
+			
+			if (ns == S1)
+				initStateMachine(&st, SENT_BY_EMISSOR, RR0);
+			else
+				initStateMachine(&st, SENT_BY_EMISSOR, RR1);
+			rejFail = 0;
+		}
 	}
+	printf("\n return \n");
+
 	return -1;
 }
 
