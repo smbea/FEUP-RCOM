@@ -135,7 +135,7 @@ int llopen(int port, int status) {
 	// set default values
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
-	dataLink.numTransmissions=3;
+	dataLink.numTransmissions=4;
 
 	int fd; // file descriptor for terminal
 	char *portName; // path to serial port interface
