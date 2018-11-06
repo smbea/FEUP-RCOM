@@ -26,7 +26,7 @@ unsigned char nr = RR0;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("alarme # timeout%d\n", alarmRaisesCnt);
+	printf("alarme #%d timeout\n", alarmRaisesCnt);
 	send_flag = 1;
 	alarmRaisesCnt++;
 }
@@ -128,6 +128,8 @@ static int open_emissor(int fd) {
 }
 
 int llopen(int port, int status) {
+	int ret;
+
 	// set default values
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
@@ -177,9 +179,10 @@ int llopen(int port, int status) {
 	// depending on if the host machine is the transmitter or receiver
 	// send/wait for initial packets to establish connection
 	if (status == RECEIVER_FLAG)
-		open_receiver(fd);
+		ret = open_receiver(fd);
+		if(ret<0) return -6; // timeout
 	else if (status == EMISSOR_FLAG) {
-		int ret = open_emissor(fd);
+		ret = open_emissor(fd);
 		if(ret) return -5; // transmittor gave out, coudln't establish connection
 	}
 
