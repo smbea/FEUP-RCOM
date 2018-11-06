@@ -26,7 +26,7 @@ unsigned char nr = RR0;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("alarme # %d\n", alarmRaisesCnt);
+	printf("alarme # timeout%d\n", alarmRaisesCnt);
 	send_flag = 1;
 	alarmRaisesCnt++;
 }
@@ -283,7 +283,7 @@ int close_receiver(int fd, int status)
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
-		perror("open_emissor:");
+		perror("close_receiver:");
 		return -1;
 	}
 
@@ -306,7 +306,6 @@ int close_receiver(int fd, int status)
 			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", input);
 				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
@@ -330,7 +329,7 @@ int close_emissor(int fd, int status)
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
-		perror("open_emissor:");
+		perror("close_emissor:");
 		return -1;
 	}
 
@@ -353,7 +352,6 @@ int close_emissor(int fd, int status)
 			res = read(fd, &input, 1);
 			if (res > 0)
 			{
-				printf("%x\n", input);
 				(*st.currentStateFunc)(&st, input);
 			}
 			if (st.currentState == END || send_flag)
@@ -398,7 +396,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
-		perror("open_emissor:");
+		perror("llwrite:");
 		return -1;
 	}
 
@@ -415,6 +413,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 				return -1;
 
 			alarm(dataLink.timeout); // activa alarme de 3s
+				printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -574,7 +573,7 @@ int llread(int fd, unsigned char *buffer)
 
 	// install handler for alarm signals
 	if(alarmSubscribeSignals(alarmHandler)) {
-		perror("open_emissor:");
+		perror("llread:");
 		return -1;
 	}
 
