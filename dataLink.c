@@ -433,7 +433,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			}
 
 			if (st.currentState == END || send_flag){
-					if (st.currentState == END ) printf("\n end \n");
 				break;
 			}
 
@@ -448,7 +447,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			return res1;
 		}
 		else{
-			
+
 			if (ns == S1)
 				initStateMachine(&st, SENT_BY_EMISSOR, RR0);
 			else
@@ -456,7 +455,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			rejFail = 0;
 		}
 	}
-	printf("\n return \n");
 
 	return -1;
 }
@@ -602,7 +600,6 @@ int llread(int fd, unsigned char *buffer)
                       //if  duplicate
                             if(!(nr == RR0 && buf == S0) && !(nr == RR1 && buf == S1)){
                                        duplicate = 1;
-                                      printf("\n duplicate: ");
                               }
 
                       else{
@@ -611,7 +608,7 @@ int llread(int fd, unsigned char *buffer)
                        }
                }
 
-		
+
 		if (st.currentState == DATA){
 			dataLink.frame[i] = buf;
 			i++;
@@ -642,13 +639,13 @@ int llread(int fd, unsigned char *buffer)
 
 
 	extractData(destuffed,buffer,destuffedSize);
-	
-	send_R(fd, bccSuccess,ns);
-if(duplicate) {
+
+	int send = send_R(fd, bccSuccess,ns);
+	if(duplicate) {
                return -2;
        }
 
-	if(send_R(fd, bccSuccess,ns) < 0)
+	if(send < 0)
 		return -1;
 
 	return destuffedSize-tailSize;
@@ -657,7 +654,7 @@ if(duplicate) {
 
 int llclose(int fd, int status)
 {
-	printf("\nLLCLOSE\n");
+	printf("\n DISCONNECTING \n");
 	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)

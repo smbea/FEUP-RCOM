@@ -133,6 +133,8 @@ int main(int argc, char** argv){
 	if(status == TRANSMITTER) sendData();
 	else readData();
 
+	llclose(application.fd,status);
+
 	return 0;
 
 }
@@ -265,7 +267,7 @@ void readDataPackets(){
 		}
 		else if(res ==-2-dataPHSize){
 			printf("Duplicate\n");
-		
+
 		}
 		else{
 			printf("Packet was rejected, resend!\n");

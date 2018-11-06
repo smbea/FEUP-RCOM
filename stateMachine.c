@@ -146,7 +146,6 @@ int stateBCC(stateMachine *st, byte input) {
 	if(currentType == REJ0 || currentType == REJ1 || currentType == UA || currentType == SET || currentType == DISC || currentType == RR0 || currentType == RR1){
 		if(input == FLAG)
 		{
-			printf("finished!\n");
 			st->currentState = END;
 		}
 		else {
