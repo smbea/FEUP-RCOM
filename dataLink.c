@@ -52,16 +52,28 @@ int alarmSubscribeSignals(void * handler) {
  *
  * @param fd File descriptor for the serial port interface used by this host machine
  */
-static void open_receiver(int fd) {
+static int open_receiver(int fd) {
+	unsigned char frame;
+	send_flag = 0;
+
 	initStateMachine(&st, SENT_BY_EMISSOR, SET);
 
-	unsigned char frame;
-	while (st.currentState != END) {
+	// install handler for alarm signals
+	if(alarmSubscribeSignals(alarmHandler)) {
+		perror("open_receiver:");
+		return -1;
+	}
+
+	alarm(dataLink.timeout*dataLink.numTransmissions);
+	while (st.currentState != END && !send_flag) {
 		if (read(fd, &frame, 1) > 0)
 			(*st.currentStateFunc)(&st, frame);
 	}
 
+	if(send_flag) return -1;
+
 	send_UA(fd);
+	return 0;
 }
 
 /**
@@ -574,7 +586,6 @@ int llread(int fd, unsigned char *buffer)
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -604,14 +615,6 @@ int llread(int fd, unsigned char *buffer)
 	}
 
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
-
-	//testing////////////////////////////
-	/*printf("DB: ");
-	for(j = 0; j < destuffedSize; j++)
-	{
-		printf("%x ", destuffed[j]);
-	}
-	printf("\n ");*/
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];

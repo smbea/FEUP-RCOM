@@ -230,7 +230,7 @@ void sendDataPackets(){
 		packetSize = generateDataPacket(data,res,packet);
 
 		if(llwrite(application.fd,packet,packetSize)>0){
-			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
+			printf("\n %d. sent %d bytes",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
 		else{

@@ -73,7 +73,6 @@ void send_UA(int fd);
 int send_I(int fd, unsigned char *data, int length, byte bcc2);
 int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer);
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer);
-void atende(int signo);
 unsigned char getBCC(unsigned char* buffer, int length);
 void genNextNs();
 void genNextNr(unsigned char received_ns);
