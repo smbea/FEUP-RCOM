@@ -293,11 +293,8 @@ int close_receiver(int fd, int status)
 	{ //4 tentativas de alarme
 		if (send_flag)
 		{
-
 			send_DISC(fd, status); //sends DISC flag back to the emissor
-
 			alarm(dataLink.timeout); // activa alarme de 3s
-			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -339,11 +336,8 @@ int close_emissor(int fd, int status)
 	{
 		if (send_flag)
 		{
-
 			send_DISC(fd, status);
-
 			alarm(dataLink.timeout); // activa alarme de 3s
-			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -413,7 +407,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 				return -1;
 
 			alarm(dataLink.timeout); // activa alarme de 3s
-				printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -422,7 +415,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				printf("%x  ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
