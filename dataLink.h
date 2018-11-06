@@ -3,6 +3,9 @@
 
 #include "stateMachine.h"
 
+#define frameSize 522
+#define headerSize 4
+#define tailSize 2
 
 /* global alarmRaisesCntiner with protocol information */	
 struct linkLayer {	
