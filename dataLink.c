@@ -11,10 +11,6 @@
 #include <string.h>
 #include <signal.h>
 
-#define frameSize 522
-#define headerSize 4
-#define tailSize 2
-
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
@@ -26,7 +22,7 @@ unsigned char nr = RR0;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("alarme # timeout%d\n", alarmRaisesCnt);
+	printf("\nalarme #%d\n", alarmRaisesCnt);
 	send_flag = 1;
 	alarmRaisesCnt++;
 }
@@ -52,16 +48,31 @@ int alarmSubscribeSignals(void * handler) {
  *
  * @param fd File descriptor for the serial port interface used by this host machine
  */
-static void open_receiver(int fd) {
+static int open_receiver(int fd) {
+	unsigned char frame;
+	send_flag = 0;
+
 	initStateMachine(&st, SENT_BY_EMISSOR, SET);
 
-	unsigned char frame;
-	while (st.currentState != END) {
+	// install handler for alarm signals
+	if(alarmSubscribeSignals(alarmHandler)) {
+		perror("open_receiver:");
+		return -1;
+	}
+
+	alarm(dataLink.timeout*dataLink.numTransmissions);
+	while (st.currentState != END && !send_flag) {
 		if (read(fd, &frame, 1) > 0)
 			(*st.currentStateFunc)(&st, frame);
 	}
 
+	if(send_flag){
+		close(fd);
+		return -1;
+	} 
+
 	send_UA(fd);
+	return 0;
 }
 
 /**
@@ -109,17 +120,22 @@ static int open_emissor(int fd) {
 	}
 
 	// if the max. number of transmissions was reached...
-	if(alarmRaisesCnt >= dataLink.numTransmissions)
+	if(alarmRaisesCnt >= dataLink.numTransmissions){
+		close(fd);
 		return -1;
+	}
+		
 	else
 		return 0;
 }
 
 int llopen(int port, int status) {
+	int ret = 0;
+
 	// set default values
 	dataLink.baudRate = B38400;
 	dataLink.timeout = 3;
-	dataLink.numTransmissions=3;
+	dataLink.numTransmissions=4;
 
 	int fd; // file descriptor for terminal
 	char *portName; // path to serial port interface
@@ -159,15 +175,15 @@ int llopen(int port, int status) {
 		return -4;
 	}
 
-	// TODO remove this
-	printf("New termios structure set\n");
+	printf("\n----New termios structure set------\n");
 
 	// depending on if the host machine is the transmitter or receiver
 	// send/wait for initial packets to establish connection
 	if (status == RECEIVER_FLAG)
-		open_receiver(fd);
+		ret = open_receiver(fd);
+		if(ret<0) return -6; // timeout
 	else if (status == EMISSOR_FLAG) {
-		int ret = open_emissor(fd);
+		ret = open_emissor(fd);
 		if(ret) return -5; // transmittor gave out, coudln't establish connection
 	}
 
@@ -293,11 +309,8 @@ int close_receiver(int fd, int status)
 	{ //4 tentativas de alarme
 		if (send_flag)
 		{
-
 			send_DISC(fd, status); //sends DISC flag back to the emissor
-
 			alarm(dataLink.timeout); // activa alarme de 3s
-			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -318,6 +331,7 @@ int close_receiver(int fd, int status)
 		}
 	}
 	printf("Communication closed by timeout. Last UA not received.\n");
+	close(fd);
 	return 0;
 }
 
@@ -339,11 +353,8 @@ int close_emissor(int fd, int status)
 	{
 		if (send_flag)
 		{
-
 			send_DISC(fd, status);
-
 			alarm(dataLink.timeout); // activa alarme de 3s
-			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -413,7 +424,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 				return -1;
 
 			alarm(dataLink.timeout); // activa alarme de 3s
-				printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -422,7 +432,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
-				printf("%x  ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
@@ -451,6 +460,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		}
 	}
 
+	close(fd);
 	return -1;
 }
 
@@ -526,7 +536,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
-		printf("Sent RR: %x\n", buf[2]);
+		printf("Sent RR: %x", buf[2]);
 	}
 	else{
 		if(ns == S0)
@@ -577,12 +587,13 @@ int llread(int fd, unsigned char *buffer)
 		return -1;
 	}
 
-	while (1)
+	alarm(dataLink.timeout * dataLink.numTransmissions);
+
+	while (!send_flag)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
-			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -611,15 +622,12 @@ int llread(int fd, unsigned char *buffer)
 
 	}
 
-	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
+	if(send_flag){
+		close(fd);
+		return -3;
+	}	
 
-	//testing////////////////////////////
-	/*printf("DB: ");
-	for(j = 0; j < destuffedSize; j++)
-	{
-		printf("%x ", destuffed[j]);
-	}
-	printf("\n ");*/
+	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
@@ -649,7 +657,7 @@ int llread(int fd, unsigned char *buffer)
 
 int llclose(int fd, int status)
 {
-	printf("\n DISCONNECTING \n");
+	printf("\n-----------Disconnecting----------\n");
 	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)

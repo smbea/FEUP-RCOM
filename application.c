@@ -65,12 +65,6 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 	for(j = 0, i++; j < strlen(sendFile.fileName); j++, i++)
 		packet[i] = sendFile.fileName[j];
 
-	printf("-----------Control packet----------\n");
-	for(j = 0; j < i; j++)
-		printf("%x ", packet[j]);
-
-	printf("\n----------- END Control packet----------\n");
-
 	return i;
 }
 
@@ -141,18 +135,25 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
+	printf("\n----------Control packet----------\n");
 	sendControlPacket(start);
-	printf("Sent control packet\n");
 
-	printf("Begining to send data packets\n");
+	printf("\n-----------Data packets------------\n");
 	sendDataPackets();
+
+	printf("\n----------Control packet----------\n");
+	sendControlPacket(end);
 	return 0;
 }
 
 
 int readData(){
+	printf("\n----------Control packet----------\n");
 	readControlPacket(start);
+	printf("\n-----------Data packets------------\n");
 	readDataPackets();
+	printf("\n----------Control packet----------\n");
+	readControlPacket(end);
 	return 0;
 }
 
@@ -200,23 +201,23 @@ int convertS2int(unsigned char* s, int t)
 
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
+	unsigned char fileName[255], fileSize[255];
+
 	llread(application.fd, packet);
 
-
-	unsigned char fileName[255], fileSize[255];
 	getFileInfo(packet, fileName, fileNameIndicator);
 	int sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
 
+	if(start_end_flag == start){
+		sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
+		if (sendFile.fd < 0)
+			{
+				perror(sendFile.fileName);
+				exit(-1);
+			}
 
-
-	sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
-	if (sendFile.fd < 0)
-		{
-			perror(sendFile.fileName);
-			exit(-1);
-		}
-
-	sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+		sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+	}
 }
 
 
@@ -230,7 +231,7 @@ void sendDataPackets(){
 		packetSize = generateDataPacket(data,res,packet);
 
 		if(llwrite(application.fd,packet,packetSize)>0){
-			printf("\n %d. sent %d bytes\n",application.sequenceNumber,res);
+			printf("\n %d. sent %d bytes",application.sequenceNumber,res);
 			application.sequenceNumber++;
 		}
 		else{
@@ -258,16 +259,20 @@ void readDataPackets(){
 	printf("Reading data packets\n");
 
 	while(count <= packetsSending){
-		printf("\n %d\n",count);
+		printf("\n %d.  ",count);
 		res = llread(application.fd,buffer)-dataPHSize;
 		if(res > 0){
 			write(sendFile.fd, buffer + dataPHSize, res);
-			printf("received %d bytes\n", res);
+			printf(", received %d bytes\n", res);
 			count++;
 		}
 		else if(res ==-2-dataPHSize){
 			printf("Duplicate\n");
 
+		}
+		else if(res ==-3-dataPHSize){
+			printf("Timeout\n");
+			exit(1);
 		}
 		else{
 			printf("Packet was rejected, resend!\n");

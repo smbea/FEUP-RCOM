@@ -3,6 +3,10 @@
 
 #include "stateMachine.h"
 
+#define packetsSize 522
+#define frameSize packetsSize+10
+#define headerSize 4
+#define tailSize 2
 
 /* global alarmRaisesCntiner with protocol information */	
 struct linkLayer {	
@@ -10,7 +14,7 @@ struct linkLayer {
 	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
 	unsigned int timeout; /*Valor do temporizador: 1 s*/	
 	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/	
-	unsigned char frame[518]; /*Trama*/	
+	unsigned char frame[frameSize-headerSize]; /*Trama*/	
 } dataLink;
 
 /* global variable holding the state machine */
@@ -73,7 +77,6 @@ void send_UA(int fd);
 int send_I(int fd, unsigned char *data, int length, byte bcc2);
 int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer);
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer);
-void atende(int signo);
 unsigned char getBCC(unsigned char* buffer, int length);
 void genNextNs();
 void genNextNr(unsigned char received_ns);
