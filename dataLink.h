@@ -3,7 +3,8 @@
 
 #include "stateMachine.h"
 
-#define frameSize 522
+#define packetsSize 522
+#define frameSize packetsSize+10
 #define headerSize 4
 #define tailSize 2
 
