@@ -8,8 +8,7 @@ struct applicationLayer {
   int fd; /*Descritor correspondente à porta série*/
   int status; /*TRANSMITTER | RECEIVER*/
   int sequenceNumber;
-  int dataSize;
-  int dataPacketSize;
+  int maxSize;
 };
 
 struct applicationLayer application;

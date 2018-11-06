@@ -3,6 +3,9 @@
 
 #include "stateMachine.h"
 
+#define frameSize 522
+#define headerSize 4
+#define tailSize 2
 
 /* global alarmRaisesCntiner with protocol information */	
 struct linkLayer {	
@@ -10,7 +13,7 @@ struct linkLayer {
 	unsigned char sequenceNumber; /*Número de sequência da trama: 0, 1*/	
 	unsigned int timeout; /*Valor do temporizador: 1 s*/	
 	unsigned int numTransmissions; /*Número de tentativas em caso de falha*/	
-	unsigned char frame[518]; /*Trama*/	
+	unsigned char frame[frameSize+headerSize]; /*Trama*/	
 } dataLink;
 
 /* global variable holding the state machine */
