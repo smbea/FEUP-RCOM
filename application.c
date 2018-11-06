@@ -271,6 +271,7 @@ void readDataPackets(){
 		}
 		else if(res ==-3-dataPHSize){
 			printf("Timeout\n");
+			return;
 		}
 		else{
 			printf("Packet was rejected, resend!\n");
