@@ -152,6 +152,7 @@ int readData(){
 
 	readControlPacket(start);
 	readDataPackets();
+	readControlPacket(end);
 	return 0;
 }
 
@@ -199,23 +200,23 @@ int convertS2int(unsigned char* s, int t)
 
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
+	unsigned char fileName[255], fileSize[255];
+
 	llread(application.fd, packet);
 
-
-	unsigned char fileName[255], fileSize[255];
 	getFileInfo(packet, fileName, fileNameIndicator);
 	int sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
 
+	if(start_end_flag == start){
+		sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
+		if (sendFile.fd < 0)
+			{
+				perror(sendFile.fileName);
+				exit(-1);
+			}
 
-
-	sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
-	if (sendFile.fd < 0)
-		{
-			perror(sendFile.fileName);
-			exit(-1);
-		}
-
-	sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+		sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+	}
 }
 
 
