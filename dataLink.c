@@ -179,8 +179,7 @@ int llopen(int port, int status) {
 		return -4;
 	}
 
-	// TODO remove this
-	printf("New termios structure set\n");
+	printf("\n----New termios structure set------\n");
 
 	// depending on if the host machine is the transmitter or receiver
 	// send/wait for initial packets to establish connection
@@ -662,7 +661,7 @@ int llread(int fd, unsigned char *buffer)
 
 int llclose(int fd, int status)
 {
-	printf("\n DISCONNECTING \n");
+	rintf("\n-----------Disconnecting----------\n");
 	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)

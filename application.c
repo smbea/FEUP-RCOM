@@ -65,12 +65,6 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 	for(j = 0, i++; j < strlen(sendFile.fileName); j++, i++)
 		packet[i] = sendFile.fileName[j];
 
-	printf("-----------Control packet----------\n");
-	for(j = 0; j < i; j++)
-		printf("%x ", packet[j]);
-
-	printf("\n----------- END Control packet----------\n");
-
 	return i;
 }
 
@@ -141,16 +135,21 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
+	printf("\n----------Control packet----------\n");
 	sendControlPacket(start);
-	printf("Sent control packet\n");
 
-	printf("Begining to send data packets\n");
+	printf("\n-----------Data packets------------\n");
 	sendDataPackets();
+
+	printf("\n----------Control packet----------\n");
+	sendControlPacket(end);
 	return 0;
 }
 
 
 int readData(){
+	printf("\n-----------Data packets------------\n");
+
 	readControlPacket(start);
 	readDataPackets();
 	return 0;
@@ -258,11 +257,11 @@ void readDataPackets(){
 	printf("Reading data packets\n");
 
 	while(count <= packetsSending){
-		printf("\n %d\n",count);
+		printf("\n %d.  ",count);
 		res = llread(application.fd,buffer)-dataPHSize;
 		if(res > 0){
 			write(sendFile.fd, buffer + dataPHSize, res);
-			printf("\n received %d bytes\n", res);
+			printf(", received %d bytes\n", res);
 			count++;
 		}
 		else if(res ==-2-dataPHSize){
@@ -271,7 +270,7 @@ void readDataPackets(){
 		}
 		else if(res ==-3-dataPHSize){
 			printf("Timeout\n");
-			return;
+			exit(1);
 		}
 		else{
 			printf("Packet was rejected, resend!\n");
