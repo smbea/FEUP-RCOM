@@ -200,23 +200,34 @@ int convertS2int(unsigned char* s, int t)
 
 void readControlPacket(int start_end_flag){
 	unsigned char packet[application.dataPacketSize];
-	llread(application.fd, packet);
-
-
 	unsigned char fileName[255], fileSize[255];
-	getFileInfo(packet, fileName, fileNameIndicator);
-	int sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
+	int sizeofSize;
 
+	int res = llread(application.fd, packet);
 
+	if(res ==-2-dataPHSize) 
+			printf("Duplicate error\n");
 
-	sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
-	if (sendFile.fd < 0)
-		{
-			perror(sendFile.fileName);
-			exit(-1);
+	else if(res ==-3-dataPHSize) {
+		printf("Timeout reached. Disconecting...\n");	
+		close(application.fd);
+		exit(1);
+		
+	}else if(res ==-1-dataPHSize)
+		printf("Packet was rejected, resend!\n");
+
+	else{	
+		getFileInfo(packet, fileName, fileNameIndicator);
+		sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
+
+		sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
+		if (sendFile.fd < 0){
+				perror(sendFile.fileName);
+				exit(-1);
 		}
 
-	sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+		sendFile.fileSize = convertS2int(fileSize, sizeofSize);
+	}
 }
 
 
@@ -234,7 +245,8 @@ void sendDataPackets(){
 			application.sequenceNumber++;
 		}
 		else{
-			printf("Alarm count reached maximum value: Exit(1)\n");
+			printf("Timeout reached. Disconecting...\n");	
+			close(application.fd);
 			exit(1);
 		}
 	}
@@ -265,13 +277,15 @@ void readDataPackets(){
 			printf("received %d bytes\n", res);
 			count++;
 		}
-		else if(res ==-2-dataPHSize){
+		else if(res ==-2-dataPHSize) 
 			printf("Duplicate\n");
 
-		}
-		else{
+		else if(res ==-3-dataPHSize) {
+			printf("Timeout reached. Disconecting...\n");	
+			close(application.fd);
+			exit(1);
+		}else
 			printf("Packet was rejected, resend!\n");
-		}
 	}
 }
 
