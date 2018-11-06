@@ -661,7 +661,7 @@ int llread(int fd, unsigned char *buffer)
 
 int llclose(int fd, int status)
 {
-	rintf("\n-----------Disconnecting----------\n");
+	printf("\n-----------Disconnecting----------\n");
 	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)
