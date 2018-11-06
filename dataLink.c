@@ -26,7 +26,7 @@ unsigned char nr = RR0;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("alarme #%d timeout\n", alarmRaisesCnt);
+	printf("\nalarme #%d timeout", alarmRaisesCnt);
 	send_flag = 1;
 	alarmRaisesCnt++;
 }
@@ -70,7 +70,10 @@ static int open_receiver(int fd) {
 			(*st.currentStateFunc)(&st, frame);
 	}
 
-	if(send_flag) return -1;
+	if(send_flag){
+		close(fd);
+		return -1;
+	} 
 
 	send_UA(fd);
 	return 0;
@@ -330,6 +333,7 @@ int close_receiver(int fd, int status)
 		}
 	}
 	printf("Communication closed by timeout. Last UA not received.\n");
+	close(fd);
 	return 0;
 }
 
@@ -458,6 +462,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		}
 	}
 
+	close(fd);
 	return -1;
 }
 
@@ -584,7 +589,9 @@ int llread(int fd, unsigned char *buffer)
 		return -1;
 	}
 
-	while (1)
+	alarm(dataLink.timeout * dataLink.numTransmissions);
+
+	while (!send_flag)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
@@ -616,6 +623,11 @@ int llread(int fd, unsigned char *buffer)
 		}
 
 	}
+
+	if(send_flag){
+		close(fd);
+		return -3;
+	}	
 
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
 

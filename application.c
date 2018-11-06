@@ -258,7 +258,7 @@ void readDataPackets(){
 	printf("Reading data packets\n");
 
 	while(count <= packetsSending){
-		printf("\n %d\n",count);
+		printf("\n %d",count);
 		res = llread(application.fd,buffer)-dataPHSize;
 		if(res > 0){
 			write(sendFile.fd, buffer + dataPHSize, res);
@@ -268,6 +268,9 @@ void readDataPackets(){
 		else if(res ==-2-dataPHSize){
 			printf("Duplicate\n");
 
+		}
+		else if(res ==-3-dataPHSize){
+			printf("Timeout\n");
 		}
 		else{
 			printf("Packet was rejected, resend!\n");
