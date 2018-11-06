@@ -185,6 +185,15 @@ void genNextNs(){
 	}
 }
 
+void genNextNr(unsigned char received_ns){
+	if(received_ns == S0){
+		nr = RR1;
+	}
+	else{
+		nr = RR0;
+	}
+}
+
 
 void send_SET(int fd)
 {
@@ -254,10 +263,11 @@ int close_receiver(int fd, int status)
 {
 
 	int res;
-	unsigned char frame,input;
 	//Waits for first DISC flag
 
 	initStateMachine(&st, SENT_BY_EMISSOR, DISC);
+
+	unsigned char frame;
 	while (st.currentState != END)
 	{
 		if (read(fd, &frame, 1) > 0)
@@ -277,6 +287,7 @@ int close_receiver(int fd, int status)
 		return -1;
 	}
 
+	unsigned char input;
 
 	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{ //4 tentativas de alarme
@@ -284,7 +295,9 @@ int close_receiver(int fd, int status)
 		{
 
 			send_DISC(fd, status); //sends DISC flag back to the emissor
+
 			alarm(dataLink.timeout); // activa alarme de 3s
+			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -304,7 +317,6 @@ int close_receiver(int fd, int status)
 			return 0;
 		}
 	}
-
 	printf("Communication closed by timeout. Last UA not received.\n");
 	return 0;
 }
@@ -312,7 +324,6 @@ int close_receiver(int fd, int status)
 int close_emissor(int fd, int status)
 {
 	int res;
-	unsigned char input;
 
 	initStateMachine(&st, SENT_BY_RECEPTOR, DISC);
 
@@ -322,12 +333,17 @@ int close_emissor(int fd, int status)
 		return -1;
 	}
 
+	unsigned char input;
+
 	while (alarmRaisesCnt <= dataLink.numTransmissions)
 	{
 		if (send_flag)
 		{
+
 			send_DISC(fd, status);
+
 			alarm(dataLink.timeout); // activa alarme de 3s
+			printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -351,9 +367,6 @@ int close_emissor(int fd, int status)
 	return 0;
 }
 
-/**
- * Compute BCC
- */
 unsigned char getBCC(unsigned char* buffer, int length)
 {
 		int i;
@@ -396,9 +409,11 @@ int llwrite(int fd, unsigned char *buffer, int length)
 		if (send_flag)
 		{
 			res1 = send_I(fd, stuffedBuffer, newLength, bcc2);
-			if (res1 < 0) return -1;
+			if (res1 < 0)
+				return -1;
 
 			alarm(dataLink.timeout); // activa alarme de 3s
+				printf("sent alarm\n");
 			send_flag = 0;
 		}
 
@@ -407,6 +422,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 			res2 = read(fd, &singleByte, 1);
 			if (res2 > 0)
 			{
+				printf("%x  ", singleByte);
 				(*st.currentStateFunc)(&st, singleByte);
 				i++;
 			}
@@ -439,14 +455,17 @@ int llwrite(int fd, unsigned char *buffer, int length)
 }
 
 
-/**
- * Parse the data and perform byte stuffing
- */
 int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer)
 {
+	/**
+	 * Compute the BCC
+	 */
 	unsigned int i;
 	unsigned int j = 0;
 
+	/**
+	 * Parse the data and perform byte stuffing
+	 */
 	unsigned char escapeChar = 0x7d;
 	unsigned char flagChar = 0x7e;
 
@@ -471,9 +490,6 @@ int byteStuffing(unsigned char *buffer, int length, unsigned char *stuffedBuffer
 	return j;
 }
 
-/**
- * Parse the data and perform byte destuffing
-*/
 int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* destuffedBuffer)
 {
 	int indexS = 0, indexD = 0;
@@ -483,6 +499,7 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 	for(indexS = 0; indexS < length; indexS++)
 	{
 
+		//printf("found flag %x\n",flagChar ^ 0x20);
 		if(stuffedBuffer[indexS] != escapeChar)
 		{
 			destuffedBuffer[indexD] = stuffedBuffer[indexS];
@@ -500,7 +517,6 @@ int byteDestuffing(unsigned char* stuffedBuffer, int length, unsigned char* dest
 	}
 	return indexD;
 }
-
 
 int send_R(int fd, int success, unsigned char received_ns)
 {
@@ -533,7 +549,6 @@ int send_R(int fd, int success, unsigned char received_ns)
 return 0;
 }
 
-//extracts data from buffer with data with bcc & flag
 unsigned char * extractData(unsigned char * buffer, unsigned char * data, int length)
 {
 	int index = 0;
@@ -546,11 +561,13 @@ unsigned char * extractData(unsigned char * buffer, unsigned char * data, int le
 
 int llread(int fd, unsigned char *buffer)
 {
-	int res = 0, destuffedSize, bccSuccess = 0;
+	int res = 0, destuffedSize;
+	int bccSuccess = 0;
 	unsigned char destuffed[frameSize-headerSize];
 	unsigned char buf = 0, received_ns;
-    int i = 0, k=0, duplicate= 0;
-	send_flag = 0;
+        int i = 0, k=0;
+       int duplicate= 0;
+
 
 	initStateMachineData(&st, SENT_BY_EMISSOR);
 
@@ -560,12 +577,12 @@ int llread(int fd, unsigned char *buffer)
 		return -1;
 	}
 
-	alarm(dataLink.timeout*dataLink.numTransmissions);
-	while (!send_flag)
+	while (1)
 	{
 		res = read(fd, &buf, 1);
 		if (res > 0)
 		{
+			//printf(" %x ", buf);
 			(*st.currentStateFunc)(&st, buf);
 			if(k == 2) ns = buf;
 			k++;
@@ -574,19 +591,19 @@ int llread(int fd, unsigned char *buffer)
 			break;
 
 		if (st.currentState == C_RCV){
-            received_ns = buf;
-            //if  duplicate
-            if(!(nr == RR0 && buf == S0) && !(nr == RR1 && buf == S1))
-				duplicate = 1;
-            
-			//else update nr 
-			else{
-                if(buf == S0) nr = RR1;
-            	else nr = RR0;
-            }
-        }
+                              received_ns = buf;
+                      //if  duplicate
+                            if(!(nr == RR0 && buf == S0) && !(nr == RR1 && buf == S1)){
+                                       duplicate = 1;
+                              }
 
-		 //save data
+                      else{
+                            if(buf == S0) nr = RR1;
+                               else nr = RR0;
+                       }
+               }
+
+
 		if (st.currentState == DATA){
 			dataLink.frame[i] = buf;
 			i++;
@@ -594,30 +611,37 @@ int llread(int fd, unsigned char *buffer)
 
 	}
 
-	if(send_flag) return -3;
-
 	destuffedSize = byteDestuffing(dataLink.frame, i, destuffed);
+
+	//testing////////////////////////////
+	/*printf("DB: ");
+	for(j = 0; j < destuffedSize; j++)
+	{
+		printf("%x ", destuffed[j]);
+	}
+	printf("\n ");*/
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
 
 	if(calculatedBcc == receivedBcc)
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
-	else{
-        if(received_ns == S0) nr = RR0;
-        else if(received_ns == S1) nr = RR1;
-    }
+	 else{
+               if(received_ns == S0) nr = RR0;
+               else if(received_ns == S1) nr = RR1;
+
+       }
+
 
 	extractData(destuffed,buffer,destuffedSize);
 
-	//send RR/REJ response
 	int send = send_R(fd, bccSuccess,ns);
+	if(duplicate) {
+               return -2;
+       }
 
-	//if REJ, discard data
-	if(send < 0) return -1;
-
-	//if duplicate, send response but discard data
-	if(duplicate) return -2;
+	if(send < 0)
+		return -1;
 
 	return destuffedSize-tailSize;
 }
@@ -625,7 +649,7 @@ int llread(int fd, unsigned char *buffer)
 
 int llclose(int fd, int status)
 {
-	printf("\nDisconnecting... \n");
+	printf("\n DISCONNECTING \n");
 	alarmRaisesCnt = 1, send_flag = 1;
 
 	if (status == RECEIVER_FLAG)

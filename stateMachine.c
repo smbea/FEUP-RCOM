@@ -51,7 +51,7 @@ int stateStart(stateMachine *st, byte input) {
 		st->currentStateFunc = &stateFlag;
 	} else {
 		// stays on Start state
-		printf("Unknown input, staying in start\n");
+		//printf("	Staying in start state\n");
 	}
 	return 0;
 }
@@ -61,9 +61,9 @@ int stateFlag(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == FLAG) {
-		//printf("	Staying in FLAG state");
+		printf("	Staying in FLAG state");
 	} else if(input == currentA) {
-		//printf("	Transitioned to a_rcv state\n");
+		printf("	Transitioned to a_rcv state\n");
 		st->currentState = A_RCV;
 		st->currentStateFunc = &stateAddress;
 	} else {
@@ -82,27 +82,29 @@ int stateAddress(stateMachine *st, byte input) {
 		return -1;
 
 	if(input == currentType) {
-		//printf("	Transitioned to c_rcv state\n");
+		printf("	Transitioned to c_rcv state\n");
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
 	} else if(isData == 1) {
-		//printf("	Transitioned to c_rcv state\n");
+		printf("	Transitioned to c_rcv state\n");
 		currentType = input;
 		st->currentState = C_RCV;
 		st->currentStateFunc = &stateProtection;
 	} else if(input == FLAG) {
 		// go back to flag state
-		//printf("	Got FLAG, back to flag state state\n");
+		printf("	Got FLAG, back to flag state state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
 	}
 	else if(input == REJ0){
+		printf("hello rej\n");
 		st->currentState = REJ;
 		st->currentStateFunc = &stateProtection;
 		currentType = REJ0;
 	}
 	else if( input == REJ1)
 	{
+		printf("hello rej\n");
 		st->currentState = REJ;
 		st->currentStateFunc = &stateProtection;
 		currentType = REJ1;
@@ -121,12 +123,12 @@ int stateProtection(stateMachine *st, byte input) {
 	if(st->currentState != C_RCV && st->currentState != REJ)
 		return -1;
 	if(input == FLAG) {
-		//printf("	Got flag, back to flag state\n");
+		printf("	Got flag, back to flag state\n");
 		st->currentState = FLAG;
 		st->currentStateFunc = &stateFlag;
 	} else if (input == (currentA^currentType)) {
 
-			//printf("	Transitioned to BCC state\n");
+			printf("	Transitioned to BCC state\n");
 			st->currentState = BCC;
 			st->currentStateFunc = &stateBCC;
 	} else {
@@ -168,6 +170,7 @@ int stateDATA(stateMachine *st, byte input) {
 		st->currentState = END;
 		return 1; //Reached flag wihtout finding BCC -> there was an error(REJ)
 	}
+
 
 	return 0;
 }
