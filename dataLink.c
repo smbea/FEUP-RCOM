@@ -26,7 +26,7 @@ unsigned char nr = RR0;
  * @param signo The signal identifier
  */
 void alarmHandler(int signo) {
-	printf("\nalarme #%d timeout", alarmRaisesCnt);
+	printf("\nalarme #%d\n", alarmRaisesCnt);
 	send_flag = 1;
 	alarmRaisesCnt++;
 }
@@ -124,8 +124,11 @@ static int open_emissor(int fd) {
 	}
 
 	// if the max. number of transmissions was reached...
-	if(alarmRaisesCnt >= dataLink.numTransmissions)
+	if(alarmRaisesCnt >= dataLink.numTransmissions){
+		close(fd);
 		return -1;
+	}
+		
 	else
 		return 0;
 }

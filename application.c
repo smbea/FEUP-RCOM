@@ -258,11 +258,11 @@ void readDataPackets(){
 	printf("Reading data packets\n");
 
 	while(count <= packetsSending){
-		printf("\n %d",count);
+		printf("\n %d\n",count);
 		res = llread(application.fd,buffer)-dataPHSize;
 		if(res > 0){
 			write(sendFile.fd, buffer + dataPHSize, res);
-			printf("received %d bytes\n", res);
+			printf("\n received %d bytes\n", res);
 			count++;
 		}
 		else if(res ==-2-dataPHSize){
