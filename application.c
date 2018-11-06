@@ -148,10 +148,11 @@ int sendData(){
 
 
 int readData(){
-	printf("\n-----------Data packets------------\n");
-
+	printf("\n----------Control packet----------\n");
 	readControlPacket(start);
+	printf("\n-----------Data packets------------\n");
 	readDataPackets();
+	printf("\n----------Control packet----------\n");
 	readControlPacket(end);
 	return 0;
 }

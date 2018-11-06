@@ -11,10 +11,6 @@
 #include <string.h>
 #include <signal.h>
 
-#define frameSize 522
-#define headerSize 4
-#define tailSize 2
-
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
 unsigned char ns = S0;
@@ -540,7 +536,7 @@ int send_R(int fd, int success, unsigned char received_ns)
 
 		buf[2] = nr;
 		buf[3] = nr ^ SENT_BY_EMISSOR;
-		printf("Sent RR: %x\n", buf[2]);
+		printf("Sent RR: %x", buf[2]);
 	}
 	else{
 		if(ns == S0)
