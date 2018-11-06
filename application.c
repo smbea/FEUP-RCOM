@@ -72,7 +72,8 @@ int generateControlPacket(int start_end_flag, unsigned char* packet)
 int main(int argc, char** argv){
 
 	int port;
-	application.maxSize = 1024;
+	application.dataSize = 512 ;
+	application.dataPacketSize = application.dataSize + 4;
 	application.sequenceNumber = 1;
 
 	if(argc < 3 || (argc < 4 && (atoi(argv[2]) == 0))){
@@ -140,19 +141,17 @@ int sendData(){
 	printf("\n-----------Data packets------------\n");
 	sendDataPackets();
 
-	printf("\n\n--------End Control packet---------\n");
+	printf("\n----------Control packet----------\n");
 	sendControlPacket(end);
 	return 0;
 }
 
 
 int readData(){
-
-	printf("\n----------Control packet----------\n");
-	readControlPacket(start);
 	printf("\n-----------Data packets------------\n");
+
+	readControlPacket(start);
 	readDataPackets();
-	printf("\n--------End Control packet---------\n");
 	readControlPacket(end);
 	return 0;
 }
@@ -160,7 +159,7 @@ int readData(){
 
 
 void sendControlPacket(int start_end_flag){
-	unsigned char packet[application.maxSize];
+	unsigned char packet[application.dataPacketSize];
 	int packet_size = generateControlPacket(start, packet);
 
 	llwrite(application.fd, packet, packet_size);
@@ -200,7 +199,7 @@ int convertS2int(unsigned char* s, int t)
 }
 
 void readControlPacket(int start_end_flag){
-	unsigned char packet[1024];
+	unsigned char packet[application.dataPacketSize];
 	unsigned char fileName[255], fileSize[255];
 
 	llread(application.fd, packet);
@@ -223,11 +222,11 @@ void readControlPacket(int start_end_flag){
 
 void sendDataPackets(){
 	int res = 0;
-	unsigned char data[application.maxSize];
-	unsigned char packet[application.maxSize];
+	unsigned char data[application.dataSize+1];
+	unsigned char packet[application.dataPacketSize];
 	int packetSize;
 
-	while((res = read(sendFile.fd,&data,application.maxSize))>0){
+	while((res = read(sendFile.fd,&data,application.dataSize))>0){
 		packetSize = generateDataPacket(data,res,packet);
 
 		if(llwrite(application.fd,packet,packetSize)>0){
@@ -252,9 +251,9 @@ int roundExcess(int a, int b)
 }
 
 void readDataPackets(){
-	int packetsSending = roundExcess(sendFile.fileSize, application.maxSize);
+	int packetsSending = roundExcess(sendFile.fileSize, application.dataSize);
 	int count = 1;
-	unsigned char buffer[application.maxSize];
+	unsigned char buffer[application.dataPacketSize+6+1];
 	int res = 0;
 	printf("Reading data packets\n");
 

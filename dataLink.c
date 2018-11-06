@@ -134,7 +134,7 @@ static int open_emissor(int fd) {
 }
 
 int llopen(int port, int status) {
-	int ret=0;
+	int ret;
 
 	// set default values
 	dataLink.baudRate = B38400;
