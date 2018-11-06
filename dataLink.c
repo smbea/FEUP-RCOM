@@ -250,7 +250,6 @@ int send_DISC(int fd, int status)
 		return -1;
 	}
 
-	printf("DISC: %x\n", buf[2]);
 	write(fd, buf, 5);
 
 	printf("sent DISC packet\n");
@@ -275,7 +274,6 @@ int close_receiver(int fd, int status)
 		{
 			(*st.currentStateFunc)(&st, frame);
 
-			printf("received: %X\n", frame);
 		}
 
 	} //DISC flag received
@@ -296,7 +294,6 @@ int close_receiver(int fd, int status)
 		if (send_flag)
 		{
 
-			printf("writing message\n");
 			send_DISC(fd, status); //sends DISC flag back to the emissor
 
 			alarm(dataLink.timeout); // activa alarme de 3s
@@ -344,7 +341,6 @@ int close_emissor(int fd, int status)
 		if (send_flag)
 		{
 
-			printf("writing message\n");
 			send_DISC(fd, status);
 
 			alarm(dataLink.timeout); // activa alarme de 3s
