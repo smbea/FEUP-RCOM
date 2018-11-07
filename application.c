@@ -209,7 +209,7 @@ void readControlPacket(int start_end_flag){
 	int sizeofSize = getFileInfo(packet, fileSize, fileSizeIndicator);
 
 	if(start_end_flag == start){
-		sendFile.fd = open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
+		sendFile.fd = open((char *) fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IXUSR);
 		if (sendFile.fd < 0)
 			{
 				perror(sendFile.fileName);
