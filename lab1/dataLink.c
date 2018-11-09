@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 
 struct termios oldtio, newtio;
 int send_flag = 1, alarmRaisesCnt = 1;
@@ -179,10 +180,10 @@ int llopen(int port, int status) {
 
 	// depending on if the host machine is the transmitter or receiver
 	// send/wait for initial packets to establish connection
-	if (status == RECEIVER_FLAG)
+	if(status == RECEIVER_FLAG){
 		ret = open_receiver(fd);
 		if(ret<0) return -6; // timeout
-	else if (status == EMISSOR_FLAG) {
+	} else if (status == EMISSOR_FLAG) {
 		ret = open_emissor(fd);
 		if(ret) return -5; // transmittor gave out, coudln't establish connection
 	}
@@ -676,4 +677,56 @@ int llclose(int fd, int status)
 	close(fd);
 
 	return 1; //positive return value for success
+}
+
+/**
+ * 	FUNCTIONS TO EVALUATE THE PROTOCOL PERFORMANCE
+ */
+
+#define ERROR_HEADER_P 0.3
+#define ERROR_DATA_P 0.5
+
+// initialize random number generator
+srand(time(NULL));
+
+/**
+ * @brief Randomly decides if it must inject error in the packet header field (given a probability ERROR_HEADER_P)
+ */
+int injectErrorInHeader() {
+	return rand() < ERROR_HEADER_P * ((double)RAND_MAX + 1.0);
+}
+
+/**
+ * @brief Randomly decides if it must inject error in the packet data field (given a probability ERROR_DATA_P)
+ */
+int injectErrorInData() {
+	return rand() < ERROR_DATA_P * ((double)RAND_MAX + 1.0);
+}
+
+/**
+ * @brief Injects errors in received input, given a static error probability in header fields and data fields
+ * 
+ * @param st 
+ * @param input 
+ * @return true 
+ * @return false 
+ */
+int injectErrors(stateMachine *st, unsigned char *input) {
+	if(st->currentState == DATA) {
+		if(injectErrorInData()) {
+			unsigned char r = rand() % 256;
+			if(*input != r) {
+				printf("Injected error in data field!\n");
+				*input = r;
+			}
+		}
+	} else {
+		if(injectErrorInHeader()) {
+			unsigned char r = rand() % 256;
+			if(*input != r) {
+				printf("Injected error in header field!\n");
+				*input = r;
+			}
+		}
+	}
 }
