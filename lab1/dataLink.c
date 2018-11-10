@@ -6,10 +6,12 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
-#include <stdlib.h>
+
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+
+#include <stdlib.h>
 #include <time.h>
 
 struct termios oldtio, newtio;
@@ -685,9 +687,7 @@ int llclose(int fd, int status)
 
 #define ERROR_HEADER_P 0.3
 #define ERROR_DATA_P 0.5
-
-// initialize random number generator
-srand(time(NULL));
+time_t t = 0;
 
 /**
  * @brief Randomly decides if it must inject error in the packet header field (given a probability ERROR_HEADER_P)
@@ -712,12 +712,19 @@ int injectErrorInData() {
  * @return false 
  */
 int injectErrors(stateMachine *st, unsigned char *input) {
+	// initialize random number generator
+	if(t == 0) {
+	t = time(NULL);
+	srand((unsigned int)t);
+	}
+
 	if(st->currentState == DATA) {
 		if(injectErrorInData()) {
 			unsigned char r = rand() % 256;
 			if(*input != r) {
 				printf("Injected error in data field!\n");
 				*input = r;
+				return 1;
 			}
 		}
 	} else {
@@ -726,7 +733,10 @@ int injectErrors(stateMachine *st, unsigned char *input) {
 			if(*input != r) {
 				printf("Injected error in header field!\n");
 				*input = r;
+				return 1;
 			}
 		}
 	}
+
+	return 0;
 }
