@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 
 #define dataPHSize 4
 
@@ -139,7 +140,11 @@ int sendData(){
 	sendControlPacket(start);
 
 	printf("\n-----------Data packets------------\n");
+	time_t start; time(&start);
 	sendDataPackets();
+	time_t end; time(&end);
+	double diff = difftime(end, start);
+	printf("It took %.2lf seconds to send data packets!\n", diff);
 
 	printf("\n----------Control packet----------\n");
 	sendControlPacket(end);
