@@ -82,4 +82,5 @@ void genNextNs();
 void genNextNr(unsigned char received_ns);
 void readDataPackets();
 void readControlPacket(int start_end_flag);
+int injectError(State bccKind, unsigned char *bcc);
 #endif

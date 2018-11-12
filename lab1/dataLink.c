@@ -634,7 +634,9 @@ int llread(int fd, unsigned char *buffer)
 
 	unsigned char calculatedBcc = getBCC(destuffed, destuffedSize-1);
 	unsigned char receivedBcc = destuffed[destuffedSize - 1];
-
+	// randomly inject error in received BCC2 to make the whole pakcet rejected
+	injectError(BCC2, &receivedBcc);
+	
 	if(calculatedBcc == receivedBcc)
 		bccSuccess = 1; //BCC calculated from data is equal to BCC2 received
 	 else{
@@ -685,22 +687,22 @@ int llclose(int fd, int status)
  * 	FUNCTIONS TO EVALUATE THE PROTOCOL PERFORMANCE
  */
 
-#define ERROR_HEADER_P 0.3
-#define ERROR_DATA_P 0.5
+#define ERROR_HEADER_P 5
+#define ERROR_DATA_P 5
 time_t t = 0;
 
 /**
  * @brief Randomly decides if it must inject error in the packet header field (given a probability ERROR_HEADER_P)
  */
 int injectErrorInHeader() {
-	return rand() < ERROR_HEADER_P * ((double)RAND_MAX + 1.0);
+	return rand() < ERROR_HEADER_P/100.0 * ((double)RAND_MAX + 1.0);
 }
 
 /**
  * @brief Randomly decides if it must inject error in the packet data field (given a probability ERROR_DATA_P)
  */
 int injectErrorInData() {
-	return rand() < ERROR_DATA_P * ((double)RAND_MAX + 1.0);
+	return rand() < ERROR_DATA_P/100.0 * ((double)RAND_MAX + 1.0);
 }
 
 /**
@@ -711,28 +713,28 @@ int injectErrorInData() {
  * @return true 
  * @return false 
  */
-int injectErrors(stateMachine *st, unsigned char *input) {
+int injectError(State bccKind, unsigned char *bcc) {
 	// initialize random number generator
 	if(t == 0) {
-	t = time(NULL);
-	srand((unsigned int)t);
+		t = time(NULL);
+		srand((unsigned int)t);
 	}
 
-	if(st->currentState == DATA) {
+	if(bccKind == BCC2) {
 		if(injectErrorInData()) {
 			unsigned char r = rand() % 256;
-			if(*input != r) {
-				printf("Injected error in data field!\n");
-				*input = r;
+			if(*bcc != r) {
+				printf("Injected error in BBC2 field!\n");
+				*bcc = r;
 				return 1;
 			}
 		}
 	} else {
 		if(injectErrorInHeader()) {
 			unsigned char r = rand() % 256;
-			if(*input != r) {
+			if(*bcc != r) {
 				printf("Injected error in header field!\n");
-				*input = r;
+				*bcc = r;
 				return 1;
 			}
 		}
