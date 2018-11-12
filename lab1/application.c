@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <time.h>
+#include <sys/time.h>
 
 #define dataPHSize 4
 
@@ -136,7 +136,11 @@ int main(int argc, char** argv){
 
 //untested
 int sendData(){
-	time_t start; time(&start);
+	struct timeval timecheck;
+	// initialize initial time (miliseconds)
+	gettimeofday(&timecheck, NULL);
+	long start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+	
 	printf("\n----------Control packet----------\n");
 	sendControlPacket(start);
 
@@ -145,9 +149,10 @@ int sendData(){
 
 	printf("\n----------Control packet----------\n");
 	sendControlPacket(end);
-	time_t end; time(&end);
-	double diff = difftime(end, start);
-	printf("\nIt took %.2f seconds to send data packets!\n", diff);
+	// measure finish time
+	gettimeofday(&timecheck, NULL);
+	long end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+	printf("\nIt took %.2ld seconds to send data packets!\n", end - start);
 	return 0;
 }
 
