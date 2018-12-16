@@ -1,21 +1,35 @@
+#include <string.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include "ftp.h"
 
 
 #include <stdio.h>
 
+// SOME FTP SERVERS
+// ftp.secyt.gov.ar (welcome message response is multiline)
+// speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
 
 int main() {
 	Ftp ftp = initFtp("speedtest.tele2.net");
 
 	char * ipv4 = getIPv4_FromHostName(ftp.host);
-	connectToFtpServer(ipv4, NULL);
+	int sockfd = connectToFtpServer(ipv4, NULL);
+	getFtpResponse(sockfd);
+
+	// auth
+	sendFtpCommand(sockfd, "USER", "anonymous");
+	sendFtpCommand(sockfd, "PASS", "ident");
+	
+	
+	//getFtpResponse(sockfd);
+	close(sockfd);
+	return 0;
 }
 
 char* getIPv4_FromHostName(const char* hostname) {
@@ -61,6 +75,36 @@ int connectToFtpServer(const char* server_address, unsigned char* port) {
         perror("connect()");
 		exit(0);
 	}
-	
+
 	return sockfd;
+}
+
+int getFtpResponse(int sockfd) {
+	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
+	char buf;
+	while(!reachedTelnetEOF) {
+		read(sockfd, &buf, 1);
+		write(STDOUT_FILENO, &buf, 1);
+		if(buf == '\r') { // CR
+			// read next
+			read(sockfd, &buf, 1);
+
+			if(buf == '\n') { // LF
+				reachedTelnetEOF = TRUE;
+			} else {
+				// step back
+				lseek(sockfd, SEEK_CUR, -1);
+			}
+		}
+	}
+	
+	write(STDOUT_FILENO,"\nreached end of message\n", 25);
+	return 0;
+}
+
+int sendFtpCommand(int sockfd, char* command, char* argument) {
+	char buffer[1024];
+	sprintf(buffer, "%s %s\r\n", command, argument);
+	write(sockfd, buffer, strlen(buffer));
+	getFtpResponse(sockfd);
 }

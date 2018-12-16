@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+#define TRUE 1
+#define FALSE 0
+
+typedef uint8_t bool;
+
 
 typedef struct {
 	uint8_t user[256];
@@ -42,4 +47,8 @@ char* getIPv4_FromHostName(const char* hostname);
  * @return Returns the file descriptor for the socket
  */
 int connectToFtpServer(const char* server_address, unsigned char* port);
+
+int getFtpResponse(int sockfd);
+
+int sendFtpCommand(int sockfd, char* command, char* argument);
 #endif
