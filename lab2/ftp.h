@@ -6,7 +6,7 @@
 #define TRUE 1
 #define FALSE 0
 #define FTP_RESPONSE_SIZE 20
-
+#define FTP_FILE_RESPONSE_SIZE 1024
 typedef uint8_t bool;
 
 
@@ -31,7 +31,7 @@ typedef struct {
  * @param host 
  * @return Ftp 
  */
-Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password);
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filename);
 
 /**
  * @brief Establishes connection with a FTP server. Once the function returns, the server is ready for new commands
@@ -45,4 +45,7 @@ int16_t ftp_getResponse(int sockfd);
 int ftp_sendCommand(int sockfd, const char *command, const char *argument);
 
 int ftp_authenticateUser(const Ftp *ftp, int sockfd);
+
+int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd);
+
 #endif

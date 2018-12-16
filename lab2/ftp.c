@@ -37,18 +37,21 @@ static void setIPFromHostName(Ftp *ftp){
 }
 
 int main() {
-	Ftp ftp = ftp_init("test.rebex.net", "demo", "password");
+	//Ftp ftp = ftp_init("test.rebex.net", "demo", "password");
+	Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, "512KB.zip");
+	
 	int sockfd = ftp_connectToServer(&ftp);
 	
 	ftp_authenticateUser(&ftp, sockfd) ;
 	
+	//ftp_sendRetrieveCommand(&ftp, sockfd);
 	
 	//ftp_getResponse(sockfd);
 	close(sockfd);
 	return 0;
 }
 
-Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password) {
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filename) {
 	Ftp ftp;
 	// add the host name
 	memset(ftp.hostname, 0, 256);
@@ -73,6 +76,10 @@ Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password) {
 		memcpy(ftp.password, "ident", 10);
 	else
 		memcpy(ftp.password, password, strlen(password));
+
+	// add file name
+	memset(ftp.path, 0, 1024);
+	memcpy(ftp.path, filename, strlen(filename));
 
 	return ftp;
 }
@@ -222,4 +229,30 @@ int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
 int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
 	ftp_sendUserCommand(ftp, sockfd);
 	ftp_sendPasswordCommand(ftp, sockfd);
+}
+
+int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd) {
+	// create file locally
+	FILE* file;
+	file = fopen(ftp->path, "w");
+
+	if(file == NULL)
+		exit(-1);
+	
+	// issue ftp command
+	ftp_sendCommand(sockfd, "RETR", ftp->path);
+
+	// listen to server response and write to file
+	char buf[FTP_FILE_RESPONSE_SIZE];
+	ssize_t read_bytes;
+	while((read_bytes = read(sockfd, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
+		printf("print packet\n");
+		fwrite(buf, read_bytes, 1, file);
+	}
+
+	printf("download ended\n");
+
+	fclose(file);
+
+	return 0;
 }
