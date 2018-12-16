@@ -106,14 +106,14 @@ int ftp_connectToServer(const Ftp *ftp) {
 	}
 
 	/* Wait for server response */
-	uint16_t response = ftp_getResponse(sockfd);
+	uint16_t response = ftp_getResponse(sockfd, NULL);
 	if(response == 220) {
 		printf("Success: Established connection with %s\n", ftp->hostname);
 		return sockfd;
 	}
 	else if (response == 120) {
 		printf("Wait: Server sent 120 code. Waiting for a new response\n");
-		response = ftp_getResponse(sockfd);
+		response = ftp_getResponse(sockfd, NULL);
 		if(response == 220) {
 			printf("Success: Established connection with %s\n", ftp->hostname);
 			return sockfd;
@@ -126,12 +126,12 @@ int ftp_connectToServer(const Ftp *ftp) {
 	}
 }
 
-int16_t ftp_getResponse(int sockfd) {
+int16_t ftp_getResponse(int sockfd, char *response) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
 	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
 	char buf[FTP_RESPONSE_SIZE]; // buffer to hold response text
 	char responseCode[3]; // buffer to hold response code
-
+	size_t responseSize = 0;
 	// read the first 3 bytes, which are the response code
 	read(sockfd, &responseCode, 3);
 
@@ -146,9 +146,6 @@ int16_t ftp_getResponse(int sockfd) {
 	while(!reachedTelnetEOF) {
 		// read up to FTP_RESPONSE_SIZE bytes
 		ssize_t read_bytes = read(sockfd, &buf, FTP_RESPONSE_SIZE);
-
-		// disply ftp response
-		write(STDOUT_FILENO, &buf, read_bytes);
 
 		// check if we reached end-of-telnet <CRLF>
 		if(isMultiLineResponse) {
@@ -167,20 +164,26 @@ int16_t ftp_getResponse(int sockfd) {
 			if(buf[read_bytes-2] == '\r' && buf[read_bytes-1] == '\n')
 				reachedTelnetEOF = TRUE;
 		}
+
+		// append new data retrieved from server to response buffer
+		if(response != NULL) {
+			memcpy(response + responseSize, buf, read_bytes);
+			responseSize += read_bytes;
+		}
 	}
 
 	return atoi(responseCode);
 }
 
-int ftp_sendCommand(int sockfd, const char *command, const char *argument) {
+int ftp_sendCommand(int sockfd, const char *command, const char *argument, char *responseBuffer) {
 	char buffer[1024];
 	sprintf(buffer, "%s %s\r\n", command, argument);
 	write(sockfd, buffer, strlen(buffer));
-	return ftp_getResponse(sockfd);
+	return ftp_getResponse(sockfd, responseBuffer);
 }
 
 int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
-	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user);
+	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user, NULL);
 	
 	switch(responseCode) {
 		case 230:
@@ -202,7 +205,7 @@ int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
 }
 
 int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
-	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password);
+	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password, NULL);
 
 	switch(responseCode) {
 		case 230:
@@ -240,7 +243,7 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd) {
 		exit(-1);
 	
 	// issue ftp command
-	ftp_sendCommand(sockfd, "RETR", ftp->path);
+	ftp_sendCommand(sockfd, "RETR", ftp->path, NULL);
 
 	// listen to server response and write to file
 	char buf[FTP_FILE_RESPONSE_SIZE];

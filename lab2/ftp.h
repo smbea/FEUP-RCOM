@@ -40,9 +40,9 @@ Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filen
  */
 int ftp_connectToServer(const Ftp *ftp);
 
-int16_t ftp_getResponse(int sockfd);
+int16_t ftp_getResponse(int sockfd, char *response);
 
-int ftp_sendCommand(int sockfd, const char *command, const char *argument);
+int ftp_sendCommand(int sockfd, const char *command, const char *argument, char *responseBuffer);
 
 int ftp_authenticateUser(const Ftp *ftp, int sockfd);
 
