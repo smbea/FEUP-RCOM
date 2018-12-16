@@ -5,13 +5,25 @@
 
 
 typedef struct {
-	uint8_t protocol[6];
 	uint8_t user[256];
 	uint8_t password[256];
-	uint8_t host[4];
+	uint8_t host[256];
 	uint8_t port[4];
-	uint8_t path[4];
+	uint8_t path[1024];
 } Ftp;
+
+/**
+ * @brief 
+ * 
+ * @param host 
+ * @return Ftp 
+ */
+Ftp initFtp(uint8_t *host) {
+	Ftp ftp;
+	memset(ftp.host, 0, 256);
+	memcpy(ftp.host, host, strlen(host));
+	return ftp;
+}
 
 
 /**
@@ -21,4 +33,13 @@ typedef struct {
  */
 char* getIPv4_FromHostName(const char* hostname);
 
+/**
+ * @brief Establishes connection with a FTP server. 
+ * 
+ * @param server_address The ftp server address in IPv4 numbers-and-dots notation
+ * @param port The TCP port. If NULL, the default port 21 is used
+ * 
+ * @return Returns the file descriptor for the socket
+ */
+int connectToFtpServer(const char* server_address, unsigned char* port);
 #endif

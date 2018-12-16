@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "ftp.h"
 
 
@@ -10,7 +12,10 @@
 
 
 int main() {
-	printf("%s\n", getIPv4_FromHostName("google.com"));
+	Ftp ftp = initFtp("speedtest.tele2.net");
+
+	char * ipv4 = getIPv4_FromHostName(ftp.host);
+	connectToFtpServer(ipv4, NULL);
 }
 
 char* getIPv4_FromHostName(const char* hostname) {
@@ -32,4 +37,30 @@ char* getIPv4_FromHostName(const char* hostname) {
 	char* address = inet_ntoa(in); // the returned string is statically allocated (careful with sub sequent calls)
 	
 	return address;
+}
+
+int connectToFtpServer(const char* server_address, unsigned char* port) {
+	uint16_t tcp_port = 21; // default port for FTP
+	int	sockfd;
+	
+	/* Open socket in bidirectional connection mode (SOCK_STREAM) using IPv4 protocol (AF_INET) */
+	if((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
+    	perror("socket()");
+        exit(0);
+    }
+	
+	/* Setup and connect to the server */
+	struct sockaddr_in server_addr;
+	bzero((char*)&server_addr, sizeof(server_addr));
+	server_addr.sin_family = AF_INET; /* IPv4 */
+	server_addr.sin_addr.s_addr = inet_addr(server_address); /* 32 bit Internet address network byte ordered */
+	if(port != NULL) tcp_port = (uint16_t) *port;
+	server_addr.sin_port = htons(tcp_port); /* server TCP port must be network byte ordered */
+   	
+	if(connect(sockfd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0){
+        perror("connect()");
+		exit(0);
+	}
+	
+	return sockfd;
 }
