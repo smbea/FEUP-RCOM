@@ -196,6 +196,27 @@ int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
 
 int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
 	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password);
+
+	switch(responseCode) {
+		case 230:
+			printf("User logged in\n");
+			return 0;
+		case 202:
+			printf("This server doesn't support password authentication\n");
+			return 1;
+		case 332:
+			printf("Account login is required\n");
+			return 2;
+		case 530:
+			printf("Invalid password\n");
+			return -1;		
+		case 500: case 501: case 503: case 421:
+			printf("Panic: Password command responded with %d\n", responseCode);
+			return -2;
+		default:
+			printf("Unexpected response %d\n", responseCode);
+			return -3;
+	}
 }
 
 int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
