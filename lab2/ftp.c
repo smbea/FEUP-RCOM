@@ -17,14 +17,10 @@
 
 int main() {
 	Ftp ftp = initFtp("ftp.secyt.gov.ar");
-
-	char * ipv4 = getIPv4_FromHostName(ftp.host);
-	int sockfd = connectToFtpServer(ipv4, NULL);
-	getFtpResponse(sockfd);
-
+	int sockfd = connectToFtpServer(&ftp);
 	// auth
-	sendFtpCommand(sockfd, "USER", "anonymous");
-	sendFtpCommand(sockfd, "PASS", "ident");
+	printf("%d\n", sendFtpCommand(sockfd, "USER", "anonymous"));
+	printf("%d\n", sendFtpCommand(sockfd, "PASS", "ident"));
 	
 	
 	//getFtpResponse(sockfd);
@@ -32,7 +28,24 @@ int main() {
 	return 0;
 }
 
-char* getIPv4_FromHostName(const char* hostname) {
+Ftp initFtp(uint8_t *host) {
+	Ftp ftp;
+	// add the host name
+	memset(ftp.hostname, 0, 256);
+	memcpy(ftp.hostname, host, strlen(host));
+
+	// fill address in network byte order and ipv4 dotted format
+	setIPFromHostName(&ftp);
+
+	// add port
+	ftp.port = 21;
+
+	// add username and password
+
+	return ftp;
+}
+
+void setIPFromHostName(Ftp *ftp){
 	/**
 	 * Get the address by hostname
 	 * The address is in network byte order, which is the same as big endian
@@ -40,7 +53,7 @@ char* getIPv4_FromHostName(const char* hostname) {
 	 * For google.com, the bytes are 0xd8 0x3a 0xd3 0x2e
 	 * [SOURCE](https://www.ibm.com/support/knowledgecenter/en/SSB27U_6.4.0/com.ibm.zvm.v640.kiml0/asonetw.htm)
 	 */
-	struct hostent *h = gethostbyname(hostname);
+	struct hostent *h = gethostbyname(ftp->hostname);
 	
 	/*
 	 * Convert the address from network byte order to IPv4 address in standard dot notation
@@ -48,13 +61,14 @@ char* getIPv4_FromHostName(const char* hostname) {
 	 */
 	struct in_addr in;
 	memcpy(&in.s_addr, h->h_addr, 4); // h->h_addr is the first address, extracted from the array (char **) h->h_addr_list
-	char* address = inet_ntoa(in); // the returned string is statically allocated (careful with sub sequent calls)
+	char* address = inet_ntoa(in);
 	
-	return address;
+	// fill ftp structure
+	memcpy(ftp->host_ipv4_address, address, strlen(address));
+	memcpy(ftp->host_network_byte_order, h->h_addr, 4);
 }
 
-int connectToFtpServer(const char* server_address, unsigned char* port) {
-	uint16_t tcp_port = 21; // default port for FTP
+int connectToFtpServer(const Ftp *ftp) {
 	int	sockfd;
 	
 	/* Open socket in bidirectional connection mode (SOCK_STREAM) using IPv4 protocol (AF_INET) */
@@ -67,22 +81,38 @@ int connectToFtpServer(const char* server_address, unsigned char* port) {
 	struct sockaddr_in server_addr;
 	bzero((char*)&server_addr, sizeof(server_addr));
 	server_addr.sin_family = AF_INET; /* IPv4 */
-	server_addr.sin_addr.s_addr = inet_addr(server_address); /* 32 bit Internet address network byte ordered */
-	if(port != NULL) tcp_port = (uint16_t) *port;
-	server_addr.sin_port = htons(tcp_port); /* server TCP port must be network byte ordered */
+	server_addr.sin_addr.s_addr = inet_addr(ftp->host_ipv4_address); /* 32 bit Internet address network byte ordered */
+	server_addr.sin_port = htons(ftp->port); /* server TCP port must be network byte ordered */
    	
 	if(connect(sockfd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0){
         perror("connect()");
 		exit(0);
 	}
 
-	return sockfd;
+	/* Wait for server response */
+	uint16_t response = getFtpResponse(sockfd);
+	if(response == 220) {
+		printf("Success: Established connection with %s\n", ftp->hostname);
+		return sockfd;
+	}
+	else if (response == 120) {
+		printf("Wait: Server sent 120 code. Waiting for a new response\n");
+		response = getFtpResponse(sockfd);
+		if(response == 220) {
+			printf("Success: Established connection with %s\n", ftp->hostname);
+			return sockfd;
+		} else {
+			return -1; // TODO
+		}
+	}
+	else if(response == 421) {
+		printf("Failed: Service is not available\n");
+	}
 }
 
 int16_t getFtpResponse(int sockfd) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
 	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
-	bool isLastLine = FALSE; // flag indicating the current line is the last one. To be used when isMultiLineResponse is true. The last line is reached if it starts with the response code
 	char buf[FTP_RESPONSE_SIZE]; // buffer to hold response text
 	char responseCode[3]; // buffer to hold response code
 
