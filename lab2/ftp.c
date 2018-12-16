@@ -41,11 +41,11 @@ int main() {
 	//Ftp ftp = ftp_init("test.rebex.net", "demo", "password");
 	Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, "512KB.zip");
 	
-	int sockfd = ftp_connectToServer(&ftp);
+	int sockfd = ftp_connectToServer(&ftp), sockfd_data;
 	
 	ftp_authenticateUser(&ftp, sockfd) ;
 	
-	ftp_sendPassiveCommand(&ftp, sockfd);
+	ftp_sendPassiveCommand(&ftp, sockfd, &sockfd_data);
 	//ftp_sendRetrieveCommand(&ftp, sockfd);
 	
 	//ftp_getResponse(sockfd);
@@ -270,7 +270,7 @@ static int parsePassiveCommandResponse(char *response, char ipv4_address[16], ui
 	return 0;
 }
 
-int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd) {
+int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data) {
 	char responseText[512] = {0};
 	char ipv4[16];
 	uint16_t port;
@@ -279,7 +279,10 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd) {
 	printf("%s\n", responseText);
 	parsePassiveCommandResponse(responseText, ipv4, &port);
 
-	// 
+	// create socket and connect to server data channel
+	int data = createSocket(ipv4, port);
+	*sockfd_data = data;
+	
 	return responseCode;
 }
 
