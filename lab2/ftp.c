@@ -12,7 +12,7 @@
 // SOME FTP SERVERS
 // ftp.secyt.gov.ar (welcome message response is multiline)
 // speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
-
+// ftp://test.rebex.net/ (has directories and is not anonymous. user: demo. password: password)
 static void setIPFromHostName(Ftp *ftp){
 	/**
 	 * Get the address by hostname
@@ -37,7 +37,7 @@ static void setIPFromHostName(Ftp *ftp){
 }
 
 int main() {
-	Ftp ftp = ftp_init("ftp.secyt.gov.ar", NULL, NULL);
+	Ftp ftp = ftp_init("test.rebex.net", "demo", "password");
 	int sockfd = ftp_connectToServer(&ftp);
 	
 	ftp_authenticateUser(&ftp, sockfd) ;
@@ -72,7 +72,7 @@ Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password) {
 	if(username == NULL) 
 		memcpy(ftp.password, "ident", 10);
 	else
-		memcpy(ftp.password, username, strlen(username));
+		memcpy(ftp.password, password, strlen(password));
 
 	return ftp;
 }
