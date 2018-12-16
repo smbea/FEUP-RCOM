@@ -31,21 +31,18 @@ typedef struct {
  * @param host 
  * @return Ftp 
  */
-Ftp initFtp(uint8_t *host);
-
-/**
- * Fills ftp structure with the server address in network byte order and ipv4 dotted format
- */
-void setIPFromHostName(Ftp *ftp);
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password);
 
 /**
  * @brief Establishes connection with a FTP server. Once the function returns, the server is ready for new commands
  * 
  * @return Returns the socket file descriptor. Upon errors it returns -1 (failed to connect with server)
  */
-int connectToFtpServer(const Ftp *ftp);
+int ftp_connectToServer(const Ftp *ftp);
 
-int16_t getFtpResponse(int sockfd);
+int16_t ftp_getResponse(int sockfd);
 
-int sendFtpCommand(int sockfd, char* command, char* argument);
+int ftp_sendCommand(int sockfd, const char *command, const char *argument);
+
+int ftp_authenticateUser(const Ftp *ftp, int sockfd);
 #endif

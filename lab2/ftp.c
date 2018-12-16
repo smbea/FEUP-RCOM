@@ -7,45 +7,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "ftp.h"
-
-
 #include <stdio.h>
 
 // SOME FTP SERVERS
 // ftp.secyt.gov.ar (welcome message response is multiline)
 // speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
 
-int main() {
-	Ftp ftp = initFtp("ftp.secyt.gov.ar");
-	int sockfd = connectToFtpServer(&ftp);
-	// auth
-	printf("%d\n", sendFtpCommand(sockfd, "USER", "anonymous"));
-	printf("%d\n", sendFtpCommand(sockfd, "PASS", "ident"));
-	
-	
-	//getFtpResponse(sockfd);
-	close(sockfd);
-	return 0;
-}
-
-Ftp initFtp(uint8_t *host) {
-	Ftp ftp;
-	// add the host name
-	memset(ftp.hostname, 0, 256);
-	memcpy(ftp.hostname, host, strlen(host));
-
-	// fill address in network byte order and ipv4 dotted format
-	setIPFromHostName(&ftp);
-
-	// add port
-	ftp.port = 21;
-
-	// add username and password
-
-	return ftp;
-}
-
-void setIPFromHostName(Ftp *ftp){
+static void setIPFromHostName(Ftp *ftp){
 	/**
 	 * Get the address by hostname
 	 * The address is in network byte order, which is the same as big endian
@@ -68,7 +36,48 @@ void setIPFromHostName(Ftp *ftp){
 	memcpy(ftp->host_network_byte_order, h->h_addr, 4);
 }
 
-int connectToFtpServer(const Ftp *ftp) {
+int main() {
+	Ftp ftp = ftp_init("ftp.secyt.gov.ar", NULL, NULL);
+	int sockfd = ftp_connectToServer(&ftp);
+	
+	ftp_authenticateUser(&ftp, sockfd) ;
+	
+	
+	//ftp_getResponse(sockfd);
+	close(sockfd);
+	return 0;
+}
+
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password) {
+	Ftp ftp;
+	// add the host name
+	memset(ftp.hostname, 0, 256);
+	memcpy(ftp.hostname, host, strlen(host));
+
+	// fill address in network byte order and ipv4 dotted format
+	setIPFromHostName(&ftp);
+
+	// add port (default)
+	ftp.port = 21;
+
+	// add username
+	memset(ftp.user, 0, 256);
+	if(username == NULL)
+		memcpy(ftp.user, "anonymous", 10);
+	else 
+		memcpy(ftp.user, username, strlen(username));
+	
+	// add password 
+	memset(ftp.password, 0, 256);
+	if(username == NULL) 
+		memcpy(ftp.password, "ident", 10);
+	else
+		memcpy(ftp.password, username, strlen(username));
+
+	return ftp;
+}
+
+int ftp_connectToServer(const Ftp *ftp) {
 	int	sockfd;
 	
 	/* Open socket in bidirectional connection mode (SOCK_STREAM) using IPv4 protocol (AF_INET) */
@@ -90,14 +99,14 @@ int connectToFtpServer(const Ftp *ftp) {
 	}
 
 	/* Wait for server response */
-	uint16_t response = getFtpResponse(sockfd);
+	uint16_t response = ftp_getResponse(sockfd);
 	if(response == 220) {
 		printf("Success: Established connection with %s\n", ftp->hostname);
 		return sockfd;
 	}
 	else if (response == 120) {
 		printf("Wait: Server sent 120 code. Waiting for a new response\n");
-		response = getFtpResponse(sockfd);
+		response = ftp_getResponse(sockfd);
 		if(response == 220) {
 			printf("Success: Established connection with %s\n", ftp->hostname);
 			return sockfd;
@@ -110,7 +119,7 @@ int connectToFtpServer(const Ftp *ftp) {
 	}
 }
 
-int16_t getFtpResponse(int sockfd) {
+int16_t ftp_getResponse(int sockfd) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
 	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
 	char buf[FTP_RESPONSE_SIZE]; // buffer to hold response text
@@ -156,9 +165,22 @@ int16_t getFtpResponse(int sockfd) {
 	return atoi(responseCode);
 }
 
-int sendFtpCommand(int sockfd, char* command, char* argument) {
+int ftp_sendCommand(int sockfd, const char *command, const char *argument) {
 	char buffer[1024];
 	sprintf(buffer, "%s %s\r\n", command, argument);
 	write(sockfd, buffer, strlen(buffer));
-	return getFtpResponse(sockfd);
+	return ftp_getResponse(sockfd);
+}
+
+int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
+	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user);
+}
+
+int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
+	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password);
+}
+
+int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
+	ftp_sendUserCommand(ftp, sockfd);
+	ftp_sendPasswordCommand(ftp, sockfd);
 }
