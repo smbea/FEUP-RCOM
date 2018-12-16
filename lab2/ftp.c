@@ -6,8 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "ftp.h"
 #include <stdio.h>
+
+#include "ftp.h"
 
 // SOME FTP SERVERS
 // ftp.secyt.gov.ar (welcome message response is multiline)
@@ -44,6 +45,7 @@ int main() {
 	
 	ftp_authenticateUser(&ftp, sockfd) ;
 	
+	ftp_sendPassiveCommand(&ftp, sockfd);
 	//ftp_sendRetrieveCommand(&ftp, sockfd);
 	
 	//ftp_getResponse(sockfd);
@@ -232,6 +234,30 @@ int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
 int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
 	ftp_sendUserCommand(ftp, sockfd);
 	ftp_sendPasswordCommand(ftp, sockfd);
+}
+
+
+static int parsePassiveCommandResponse(char *response, char ipv4_address[16], uint16_t *port) {
+	// Entering Passive Mode (90,130,70,73,106,78).
+	char *index = strchr(response, '(') + 1; // already pointing for IP MSB
+	uint8_t ip1, ip2, ip3, ip4, port1, port2;
+	sscanf(index, "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu", &ip1, &ip2, &ip3, &ip4, &port1, &port2);
+	sprintf(ipv4_address, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
+	*port = port1*256 + port2;
+
+	return 0;
+}
+
+int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd) {
+	char responseText[512] = {0};
+	char ipv4[16];
+	uint16_t port;
+	int responseCode = ftp_sendCommand(sockfd, "PASV", "", responseText);
+	// TODO check for successful response code
+	printf("%s\n", responseText);
+	parsePassiveCommandResponse(responseText, ipv4, &port);
+
+	return responseCode;
 }
 
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd) {
