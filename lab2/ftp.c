@@ -86,27 +86,41 @@ Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filen
 	return ftp;
 }
 
-int ftp_connectToServer(const Ftp *ftp) {
+/**
+ * @brief Create a Socket object
+ * 
+ * @param ipv4_address 
+ * @param port 
+ * @return int The file descriptor for the socket
+ */
+static int createSocket(const char *ipv4_address, uint16_t port) {
 	int	sockfd;
 	
 	/* Open socket in bidirectional connection mode (SOCK_STREAM) using IPv4 protocol (AF_INET) */
 	if((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
     	perror("socket()");
-        exit(0);
+        return -1;
     }
 	
 	/* Setup and connect to the server */
 	struct sockaddr_in server_addr;
 	bzero((char*)&server_addr, sizeof(server_addr));
 	server_addr.sin_family = AF_INET; /* IPv4 */
-	server_addr.sin_addr.s_addr = inet_addr(ftp->host_ipv4_address); /* 32 bit Internet address network byte ordered */
-	server_addr.sin_port = htons(ftp->port); /* server TCP port must be network byte ordered */
+	server_addr.sin_addr.s_addr = inet_addr(ipv4_address); /* 32 bit Internet address network byte ordered */
+	server_addr.sin_port = htons(port); /* server TCP port must be network byte ordered */
    	
 	if(connect(sockfd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0){
         perror("connect()");
-		exit(0);
+		return -2;
 	}
 
+	return sockfd;
+}
+
+int ftp_connectToServer(const Ftp *ftp) {
+
+	int	sockfd = createSocket(ftp->host_ipv4_address, ftp->port);
+	
 	/* Wait for server response */
 	uint16_t response = ftp_getResponse(sockfd, NULL);
 	if(response == 220) {
@@ -237,6 +251,14 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
 }
 
 
+/**
+ * @brief Parses the server response to PASV command
+ * 
+ * @param response The server's response
+ * @param ipv4_address Buffer to store the address in IPv4 dotted format (at least 16 bytes long)
+ * @param port Buffer to store the port
+ * @return int 
+ */
 static int parsePassiveCommandResponse(char *response, char ipv4_address[16], uint16_t *port) {
 	// Entering Passive Mode (90,130,70,73,106,78).
 	char *index = strchr(response, '(') + 1; // already pointing for IP MSB
@@ -257,6 +279,7 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd) {
 	printf("%s\n", responseText);
 	parsePassiveCommandResponse(responseText, ipv4, &port);
 
+	// 
 	return responseCode;
 }
 
