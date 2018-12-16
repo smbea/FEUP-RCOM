@@ -49,7 +49,7 @@ char* getIPv4_FromHostName(const char* hostname);
  */
 int connectToFtpServer(const char* server_address, unsigned char* port);
 
-int getFtpResponse(int sockfd);
+int16_t getFtpResponse(int sockfd);
 
 int sendFtpCommand(int sockfd, char* command, char* argument);
 #endif

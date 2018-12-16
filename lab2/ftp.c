@@ -79,7 +79,7 @@ int connectToFtpServer(const char* server_address, unsigned char* port) {
 	return sockfd;
 }
 
-int getFtpResponse(int sockfd) {
+int16_t getFtpResponse(int sockfd) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
 	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
 	bool isLastLine = FALSE; // flag indicating the current line is the last one. To be used when isMultiLineResponse is true. The last line is reached if it starts with the response code
@@ -93,6 +93,8 @@ int getFtpResponse(int sockfd) {
 	read(sockfd, buf, 1);
 	if(buf[0] == '-')
 		isMultiLineResponse = TRUE;
+	else if(buf[0] != ' ')
+		return -1; // unexpected
 	
 	// read remaining response
 	while(!reachedTelnetEOF) {
@@ -121,12 +123,12 @@ int getFtpResponse(int sockfd) {
 		}
 	}
 
-	return 0;
+	return atoi(responseCode);
 }
 
 int sendFtpCommand(int sockfd, char* command, char* argument) {
 	char buffer[1024];
 	sprintf(buffer, "%s %s\r\n", command, argument);
 	write(sockfd, buffer, strlen(buffer));
-	getFtpResponse(sockfd);
+	return getFtpResponse(sockfd);
 }
