@@ -174,6 +174,24 @@ int ftp_sendCommand(int sockfd, const char *command, const char *argument) {
 
 int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
 	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user);
+	
+	switch(responseCode) {
+		case 230:
+			printf("User logged in\n");
+			return 0;
+		case 331: case 332:
+			printf("Password expected\n");
+			return 1;
+		case 530:
+			printf("Invalid username %s\n", ftp->user);
+			return -1;
+		case 500: case 501: case 421:
+			printf("Panic: User command responded with %d\n", responseCode);
+			return -2;
+		default:
+			printf("Unexpected response %d\n", responseCode);
+			return -3;
+	}
 }
 
 int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
