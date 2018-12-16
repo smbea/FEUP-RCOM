@@ -5,6 +5,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define FTP_RESPONSE_SIZE 20
 
 typedef uint8_t bool;
 

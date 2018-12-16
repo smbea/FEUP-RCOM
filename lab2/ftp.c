@@ -16,7 +16,7 @@
 // speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
 
 int main() {
-	Ftp ftp = initFtp("speedtest.tele2.net");
+	Ftp ftp = initFtp("ftp.secyt.gov.ar");
 
 	char * ipv4 = getIPv4_FromHostName(ftp.host);
 	int sockfd = connectToFtpServer(ipv4, NULL);
@@ -81,24 +81,46 @@ int connectToFtpServer(const char* server_address, unsigned char* port) {
 
 int getFtpResponse(int sockfd) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
-	char buf;
-	while(!reachedTelnetEOF) {
-		read(sockfd, &buf, 1);
-		write(STDOUT_FILENO, &buf, 1);
-		if(buf == '\r') { // CR
-			// read next
-			read(sockfd, &buf, 1);
+	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
+	bool isLastLine = FALSE; // flag indicating the current line is the last one. To be used when isMultiLineResponse is true. The last line is reached if it starts with the response code
+	char buf[FTP_RESPONSE_SIZE]; // buffer to hold response text
+	char responseCode[3]; // buffer to hold response code
 
-			if(buf == '\n') { // LF
+	// read the first 3 bytes, which are the response code
+	read(sockfd, &responseCode, 3);
+
+	// read the next byte which is either a space (single line response) or '-' (multiline response)
+	read(sockfd, buf, 1);
+	if(buf[0] == '-')
+		isMultiLineResponse = TRUE;
+	
+	// read remaining response
+	while(!reachedTelnetEOF) {
+		// read up to FTP_RESPONSE_SIZE bytes
+		ssize_t read_bytes = read(sockfd, &buf, FTP_RESPONSE_SIZE);
+
+		// disply ftp response
+		write(STDOUT_FILENO, &buf, read_bytes);
+
+		// check if we reached end-of-telnet <CRLF>
+		if(isMultiLineResponse) {
+			/* For multiline responses we reach the end of the response when we find the response code
+			 *  i.e. the specification says the last telnet line starts with the response code
+			 * Thus, we search for the code on the buffer. if we found it, then we are reading the last telnet line, *  which ends once we reach the end-of-telnet <CRLF>
+			 */
+			for(int i = 0; i < read_bytes-3; i++)
+				if(memcmp(responseCode, buf+i, 3) == 0)
+					isMultiLineResponse = FALSE; // small trick to reuse the code below. In fact, the remaning response is no longer multiline
+		} else {
+			/* 
+			 * For single line responses, we reach the end of response when
+			 *  the last two bytes are CR and LF respectively
+			 */
+			if(buf[read_bytes-2] == '\r' && buf[read_bytes-1] == '\n')
 				reachedTelnetEOF = TRUE;
-			} else {
-				// step back
-				lseek(sockfd, SEEK_CUR, -1);
-			}
 		}
 	}
-	
-	write(STDOUT_FILENO,"\nreached end of message\n", 25);
+
 	return 0;
 }
 
