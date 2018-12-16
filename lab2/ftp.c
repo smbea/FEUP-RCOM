@@ -46,7 +46,7 @@ int main() {
 	ftp_authenticateUser(&ftp, sockfd) ;
 	
 	ftp_sendPassiveCommand(&ftp, sockfd, &sockfd_data);
-	//ftp_sendRetrieveCommand(&ftp, sockfd);
+	ftp_sendRetrieveCommand(&ftp, sockfd, sockfd_data);
 	
 	//ftp_getResponse(sockfd);
 	close(sockfd);
@@ -282,11 +282,11 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data) {
 	// create socket and connect to server data channel
 	int data = createSocket(ipv4, port);
 	*sockfd_data = data;
-	
+
 	return responseCode;
 }
 
-int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd) {
+int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	// create file locally
 	FILE* file;
 	file = fopen(ftp->path, "w");
@@ -300,7 +300,7 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd) {
 	// listen to server response and write to file
 	char buf[FTP_FILE_RESPONSE_SIZE];
 	ssize_t read_bytes;
-	while((read_bytes = read(sockfd, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
+	while((read_bytes = read(sockfd_data, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
 		printf("print packet\n");
 		fwrite(buf, read_bytes, 1, file);
 	}

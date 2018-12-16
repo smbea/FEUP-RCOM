@@ -48,6 +48,6 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd);
 
 int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data);
 
-int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd);
+int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data);
 
 #endif
