@@ -14,7 +14,21 @@
 // ftp.secyt.gov.ar (welcome message response is multiline)
 // speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
 // ftp://test.rebex.net/ (has directories and is not anonymous. user: demo. password: password)
-static void setIPFromHostName(Ftp *ftp){
+
+/**
+ * @brief Gets the IP address in network byte order and IPV4 in standard dot notation
+ * The Ftp fields host_ipv4_address anf host_network_byte_order are updated accordingly
+ * 
+ * @param ftp The Ftp structure
+ * @retval -1 The hostname field is NULL
+ * @retval -2 Failed to get the address from host name
+ * @retval 0 Success
+ */
+static int setIPFromHostName(Ftp *ftp){
+
+	if(ftp->hostname == NULL)
+		return -1;
+	
 	/**
 	 * Get the address by hostname
 	 * The address is in network byte order, which is the same as big endian
@@ -23,6 +37,8 @@ static void setIPFromHostName(Ftp *ftp){
 	 * [SOURCE](https://www.ibm.com/support/knowledgecenter/en/SSB27U_6.4.0/com.ibm.zvm.v640.kiml0/asonetw.htm)
 	 */
 	struct hostent *h = gethostbyname(ftp->hostname);
+	if(h == NULL)
+		return -2;
 	
 	/*
 	 * Convert the address from network byte order to IPv4 address in standard dot notation
@@ -35,67 +51,73 @@ static void setIPFromHostName(Ftp *ftp){
 	// fill ftp structure
 	memcpy(ftp->host_ipv4_address, address, strlen(address));
 	memcpy(ftp->host_network_byte_order, h->h_addr, 4);
-}
 
-int main() {
-	Ftp ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
-	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
-	
-	int sockfd = ftp_connectToServer(&ftp), sockfd_data;
-	
-	ftp_authenticateUser(&ftp, sockfd) ;
-	
-	ftp_sendPassiveCommand(&ftp, sockfd, &sockfd_data);
-	ftp_changeDirectoryCommand(&ftp, sockfd);
-	ftp_sendRetrieveCommand(&ftp, sockfd, sockfd_data);
-	
-	//ftp_getResponse(sockfd);
-	close(sockfd);
 	return 0;
 }
 
-Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename) {
-	Ftp ftp;
-	// add the host name
-	memset(ftp.hostname, 0, 256);
-	memcpy(ftp.hostname, host, strlen(host));
-
-	// fill address in network byte order and ipv4 dotted format
-	setIPFromHostName(&ftp);
-
-	// add port (default)
-	ftp.port = 21;
-
-	// add username
-	memset(ftp.user, 0, 256);
-	if(username == NULL)
-		memcpy(ftp.user, "anonymous", 10);
-	else 
-		memcpy(ftp.user, username, strlen(username));
+int main() {
+	Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
+	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
 	
-	// add password 
-	memset(ftp.password, 0, 256);
-	if(username == NULL) 
-		memcpy(ftp.password, "ident", 10);
-	else
-		memcpy(ftp.password, password, strlen(password));
+	int sockfd = ftp_connectToServer(ftp), sockfd_data;
+	
+	ftp_authenticateUser(ftp, sockfd) ;
+	
+	ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data);
+	ftp_changeDirectoryCommand(ftp, sockfd);
+	ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data);
+	
+	//ftp_getResponse(sockfd);
+	close(sockfd);
 
+	free(ftp);
+	return 0;
+}
+
+Ftp* ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename) {
+	Ftp *ftp = calloc(1,sizeof(Ftp));
+	if(ftp == NULL)
+		return NULL;
+	
+	/* validate input, host and filename must not be NULL */
+	if(host == NULL)
+		printf("[ERROR]: 'host' paramenter must not be NULL\n");
+	if(filename == NULL)
+		printf("[ERROR]: 'filename' parameter must not be NULL\n");
+	if(filename == NULL || host == NULL) return NULL;
+
+	/* initialize the ftp structure */
+	
+	// hostname
+	memcpy(ftp->hostname, host, strlen(host));
+	// address in network byte order and ipv4 dotted format
+	setIPFromHostName(ftp);
+	// add port (default)
+	ftp->port = 21;
+	// add username
+	if(username == NULL)
+		memcpy(ftp->user, "anonymous", 10);
+	else
+		memcpy(ftp->user, username, strlen(username));
+	// add password 
+	if(password == NULL) 
+		memcpy(ftp->password, "ident", 6);
+	else
+		memcpy(ftp->password, password, strlen(password));
 	// add path
-	memset(ftp.path, 0, 1024);
-	memcpy(ftp.path, path, strlen(path));
+	memcpy(ftp->path, path, strlen(path));
 	// add file name
-	memset(ftp.fileName, 0, 256);
-	memcpy(ftp.fileName, filename, strlen(filename));
+	memcpy(ftp->fileName, filename, strlen(filename));
 
 	return ftp;
 }
 
 /**
- * @brief Create a Socket object
+ * @brief Initializes a Socket
  * 
  * @param ipv4_address 
  * @param port 
- * @return int The file descriptor for the socket
+ * @return int The file descriptor for the socket. Negative values indicate error
  */
 static int createSocket(const char *ipv4_address, uint16_t port) {
 	int	sockfd;
@@ -124,25 +146,29 @@ static int createSocket(const char *ipv4_address, uint16_t port) {
 int ftp_connectToServer(const Ftp *ftp) {
 
 	int	sockfd = createSocket(ftp->host_ipv4_address, ftp->port);
+	if(sockfd < 0)
+		return -1;
 	
 	/* Wait for server response */
 	uint16_t response = ftp_getResponse(sockfd, NULL);
 	if(response == 220) {
-		printf("Success: Established connection with %s\n", ftp->hostname);
+		printf("[SUCCESS] Established connection with %s\n", ftp->hostname);
 		return sockfd;
 	}
 	else if (response == 120) {
-		printf("Wait: Server sent 120 code. Waiting for a new response\n");
+		printf("[WAIT] Server sent 120 code. Waiting for a new response\n");
 		response = ftp_getResponse(sockfd, NULL);
 		if(response == 220) {
-			printf("Success: Established connection with %s\n", ftp->hostname);
+			printf("[SUCCESS] Established connection with %s\n", ftp->hostname);
 			return sockfd;
 		} else {
-			return -1; // TODO
+			printf("[ERROR] Unexpected server response code %d\n", response);
+			return -2; // TODO
 		}
 	}
 	else if(response == 421) {
-		printf("Failed: Service is not available\n");
+		printf("[ERROR] Service is not available\n");
+		return -3;
 	}
 }
 
@@ -196,7 +222,7 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 }
 
 int ftp_sendCommand(int sockfd, const char *command, const char *argument, char *responseBuffer) {
-	char buffer[1024];
+	char buffer[512];
 	sprintf(buffer, "%s %s\r\n", command, argument);
 	write(sockfd, buffer, strlen(buffer));
 	return ftp_getResponse(sockfd, responseBuffer);
@@ -207,19 +233,19 @@ int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
 	
 	switch(responseCode) {
 		case 230:
-			printf("User logged in\n");
-			return 0;
+			printf("[SUCCESS] User logged in\n");
+			return 0; // TODO does this mean no password is required?
 		case 331: case 332:
-			printf("Password expected\n");
+			printf("[INFO] Server is waiting for password\n");
 			return 1;
 		case 530:
-			printf("Invalid username %s\n", ftp->user);
+			printf("[ERROR] Invalid username %s\n", ftp->user);
 			return -1;
 		case 500: case 501: case 421:
-			printf("Panic: User command responded with %d\n", responseCode);
+			printf("[ERROR] Internal error. User command responded with %d\n", responseCode);
 			return -2;
 		default:
-			printf("Unexpected response %d\n", responseCode);
+			printf("[ERROR] Unexpected server response %d\n", responseCode);
 			return -3;
 	}
 }
@@ -229,23 +255,23 @@ int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
 
 	switch(responseCode) {
 		case 230:
-			printf("User logged in\n");
+			printf("[SUCCESS] User logged in\n");
 			return 0;
 		case 202:
-			printf("This server doesn't support password authentication\n");
+			printf("[INFO] This server doesn't support password authentication\n");
 			return 1;
 		case 332:
-			printf("Account login is required\n");
-			return 2;
+			printf("[ERROR] Account login is required\n");
+			return -1;
 		case 530:
-			printf("Invalid password\n");
-			return -1;		
+			printf("[ERROR] Invalid password\n");
+			return -2;		
 		case 500: case 501: case 503: case 421:
-			printf("Panic: Password command responded with %d\n", responseCode);
-			return -2;
+			printf("[ERROR] Internal error. Password command responded with %d\n", responseCode);
+			return -3;
 		default:
 			printf("Unexpected response %d\n", responseCode);
-			return -3;
+			return -4;
 	}
 }
 
@@ -321,9 +347,9 @@ int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd) {
 
 	switch(responseCode) {
 		case 250:
-			printf("[SUCCESS]: Changed current directory to %s\n", ftp->path);
+			printf("[SUCCESS] Changed current directory to %s\n", ftp->path);
 			return 0;
 		default:
-			printf("[ERROR]: Failed to change to directory %s\n", ftp->path);
+			printf("[ERROR] Failed to change to directory %s\n", ftp->path);
 	}
 }
