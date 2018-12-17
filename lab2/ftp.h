@@ -23,6 +23,7 @@ typedef struct {
 	
 	// path
 	char path[1024];
+	char fileName[256];
 } Ftp;
 
 /**
@@ -31,7 +32,7 @@ typedef struct {
  * @param host 
  * @return Ftp 
  */
-Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filename);
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename);
 
 /**
  * @brief Establishes connection with a FTP server. Once the function returns, the server is ready for new commands
@@ -49,5 +50,7 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd);
 int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data);
 
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data);
+
+int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd);
 
 #endif

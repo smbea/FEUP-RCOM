@@ -38,14 +38,15 @@ static void setIPFromHostName(Ftp *ftp){
 }
 
 int main() {
-	//Ftp ftp = ftp_init("test.rebex.net", "demo", "password");
-	Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, "512KB.zip");
+	Ftp ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
+	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
 	
 	int sockfd = ftp_connectToServer(&ftp), sockfd_data;
 	
 	ftp_authenticateUser(&ftp, sockfd) ;
 	
 	ftp_sendPassiveCommand(&ftp, sockfd, &sockfd_data);
+	ftp_changeDirectoryCommand(&ftp, sockfd);
 	ftp_sendRetrieveCommand(&ftp, sockfd, sockfd_data);
 	
 	//ftp_getResponse(sockfd);
@@ -53,7 +54,7 @@ int main() {
 	return 0;
 }
 
-Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filename) {
+Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename) {
 	Ftp ftp;
 	// add the host name
 	memset(ftp.hostname, 0, 256);
@@ -79,9 +80,12 @@ Ftp ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t* filen
 	else
 		memcpy(ftp.password, password, strlen(password));
 
-	// add file name
+	// add path
 	memset(ftp.path, 0, 1024);
-	memcpy(ftp.path, filename, strlen(filename));
+	memcpy(ftp.path, path, strlen(path));
+	// add file name
+	memset(ftp.fileName, 0, 256);
+	memcpy(ftp.fileName, filename, strlen(filename));
 
 	return ftp;
 }
@@ -289,13 +293,13 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data) {
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	// create file locally
 	FILE* file;
-	file = fopen(ftp->path, "w");
+	file = fopen(ftp->fileName, "w");
 
 	if(file == NULL)
 		exit(-1);
 	
 	// issue ftp command
-	ftp_sendCommand(sockfd, "RETR", ftp->path, NULL);
+	ftp_sendCommand(sockfd, "RETR", ftp->fileName, NULL);
 
 	// listen to server response and write to file
 	char buf[FTP_FILE_RESPONSE_SIZE];
@@ -310,4 +314,16 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	fclose(file);
 
 	return 0;
+}
+
+int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd) {
+	int responseCode = ftp_sendCommand(sockfd, "CWD", ftp->path, NULL);
+
+	switch(responseCode) {
+		case 250:
+			printf("[SUCCESS]: Changed current directory to %s\n", ftp->path);
+			return 0;
+		default:
+			printf("[ERROR]: Failed to change to directory %s\n", ftp->path);
+	}
 }
