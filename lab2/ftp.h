@@ -113,14 +113,22 @@ int ftp_sendUserCommand(const Ftp *ftp, int sockfd);
 int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd);
 
 /**
- * @brief 
+ * @brief Handles user authentication, sending the username and password to the server
  * 
- * @param ftp 
- * @param sockfd 
- * @return int 
+ * @param ftp The ftp connection
+ * @param sockfd The file descriptor for the open socket with server for the command channel
+ * @return Returns 0 if User logged in successfully, otherwise something went wrong
  */
 int ftp_authenticateUser(const Ftp *ftp, int sockfd);
 
+/**
+ * @brief Asks server to switch to passive mode and creates a new socket to communicate with the new address:port provided by the server
+ * 
+ * @param ftp The ftp connection
+ * @param sockfd The file descriptor for the open socket with server for the command channel
+ * @param sockfd_data Memory address for storing the new socket file descriptor 
+ * @return If <0 an error ocurred, otherwise the server successfully switched to passive mode and the new socket established connection
+ */
 int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data);
 
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data);

@@ -64,14 +64,16 @@ int main() {
 	
 	int sockfd = ftp_connectToServer(ftp), sockfd_data;
 
-	if(sockfd < 0) {
+	if(sockfd < 0)
 		exit(-1);
-	}
-	
-	ftp_authenticateUser(ftp, sockfd) ;
-	
+	printf("\n################# AUTH #################\n");
+	if(ftp_authenticateUser(ftp, sockfd))
+		exit(-2);
+	printf("\n################# CHANGING TO PASSIVE MODE #################\n");
 	ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data);
+	printf("\n################# CHANGING DIRECTORY #################\n");
 	ftp_changeDirectoryCommand(ftp, sockfd);
+	printf("\n################# RETRIVING FILE #################\n");
 	ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data);
 	
 	//ftp_getResponse(sockfd);
@@ -199,7 +201,6 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 	while(!reachedTelnetEOF) {
 		// read up to FTP_RESPONSE_SIZE bytes
 		ssize_t read_bytes = read(sockfd, &buf, FTP_RESPONSE_SIZE);
-		printf("%s\n", buf);
 		// check if we reached end-of-telnet <CRLF>
 		if(isMultiLineResponse) {
 			/* For multiline responses we reach the end of the response when we find the response code
@@ -236,62 +237,65 @@ int ftp_sendCommand(int sockfd, const char *command, const char *argument, char 
 }
 
 int ftp_sendUserCommand(const Ftp *ftp, int sockfd) {
-	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user, NULL);
+	char responseText[FTP_RESPONSE_SIZE] = {0};
+	int responseCode = ftp_sendCommand(sockfd, "USER", ftp->user, responseText);
 	
 	switch(responseCode) {
 		case 230:
 			printf("[SUCCESS] User logged in\n");
 			return 0; // TODO does this mean no password is required?
 		case 331: case 332:
-			printf("[INFO] Server is waiting for password\n");
+			printf("[INFO] %s\n", responseText);
 			return 1;
 		case 530:
-			printf("[ERROR] Invalid username %s\n", ftp->user);
+			printf("[ERROR] %s\n", responseText);
 			return -1;
 		case 500: case 501: case 421:
-			printf("[ERROR] Internal error. User command responded with %d\n", responseCode);
+			printf("[ERROR] Status %d. %s\n", responseCode, responseText);
 			return -2;
 		default:
-			printf("[ERROR] Unexpected server response %d\n", responseCode);
+			printf("[ERROR] Unexpected server response %d. %s\n", responseCode, responseText);
 			return -3;
 	}
 }
 
 int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
-	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password, NULL);
+	char responseText[FTP_RESPONSE_SIZE] = {0};
+	int responseCode = ftp_sendCommand(sockfd, "PASS", ftp->password, responseText);
 
 	switch(responseCode) {
 		case 230:
 			printf("[SUCCESS] User logged in\n");
 			return 0;
 		case 202:
-			printf("[INFO] This server doesn't support password authentication\n");
+			printf("[INFO] %s\n", responseText);
 			return 1;
 		case 332:
-			printf("[ERROR] Account login is required\n");
+			printf("[ERROR] %s\n", responseText);
 			return -1;
 		case 530:
-			printf("[ERROR] Invalid password\n");
+			printf("[ERROR] %s\n", responseText);
 			return -2;		
 		case 500: case 501: case 503: case 421:
-			printf("[ERROR] Internal error. Password command responded with %d\n", responseCode);
+			printf("[ERROR] Status %d. %s\n", responseCode, responseText);
 			return -3;
 		default:
-			printf("Unexpected response %d\n", responseCode);
+			printf("[ERROR] Unexpected server response %d. %s\n", responseCode, responseText);
 			return -4;
 	}
 }
 
 int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
-	printf("username: %s\t password: %s", ftp->user, ftp->password);
+	printf("Sending username.....\n");
 	int ret;
 	if((ret = ftp_sendUserCommand(ftp, sockfd)) == 0)
 		return 0;
-	else if(ret == 1)
+	else if(ret == 1) {
+		printf("Sending password.....\n");
 		return ftp_sendPasswordCommand(ftp, sockfd);
+	}
 	else return -1;
 }
-
 
 /**
  * @brief Parses the server response to PASV command
@@ -304,7 +308,6 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
 static int parsePassiveCommandResponse(char *response, char ipv4_address[16], uint16_t *port) {
 	// Entering Passive Mode (90,130,70,73,106,78).
 	char *index = strchr(response, '(') + 1; // already pointing for IP MSB
-	printf("passive mode: %s\n", response);
 	uint8_t ip1, ip2, ip3, ip4, port1, port2;
 	sscanf(index, "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu", &ip1, &ip2, &ip3, &ip4, &port1, &port2);
 	sprintf(ipv4_address, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
@@ -314,19 +317,34 @@ static int parsePassiveCommandResponse(char *response, char ipv4_address[16], ui
 }
 
 int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data) {
-	char responseText[512] = {0};
+	char responseText[FTP_RESPONSE_SIZE] = {0};
 	char ipv4[16];
 	uint16_t port;
+
+	// send passive command to server
 	int responseCode = ftp_sendCommand(sockfd, "PASV", "", responseText);
-	// TODO check for successful response code
-	printf("%s\n", responseText);
+	
+	switch (responseCode) {
+		case 227:
+			printf("[SUCCESS] Server switched to passive mode\n");
+			break;
+		case 500: case 501: case 502: case 421: case 530:
+			printf("[ERROR] Status %d. %s\n", responseCode, responseText);
+			return -1;
+		default:
+			printf("[ERROR] Unexpected server response %d. %s\n", responseCode, responseText);
+			return -2;
+	}
+
+	// parse the server response
 	parsePassiveCommandResponse(responseText, ipv4, &port);
 
 	// create socket and connect to server data channel
 	int data = createSocket(ipv4, port);
+	if(data < 0 ) return -3;
 	*sockfd_data = data;
 
-	return responseCode;
+	return 0;
 }
 
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
@@ -344,7 +362,6 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	char buf[FTP_FILE_RESPONSE_SIZE];
 	ssize_t read_bytes;
 	while((read_bytes = read(sockfd_data, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
-		printf("print packet\n");
 		fwrite(buf, read_bytes, 1, file);
 	}
 
