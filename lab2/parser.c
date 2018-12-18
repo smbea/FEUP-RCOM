@@ -15,6 +15,7 @@ int parseFTPBegin(char *string)
     char subbuff[7];
     memcpy(subbuff, &string[0], 6);
     subbuff[7] = '\0';
+    string += 6;
     return memcmp(subbuff, "ftp://", 6);
 }
 
@@ -67,7 +68,7 @@ int parseHost(char *string, char* hostname)
             return -1;
     }
 
-    while ((*string) != '/')
+    while ((*string) != '/' && (*string) != ':')
     {
         host_name[index] = (*string);
         string++;
@@ -79,7 +80,24 @@ int parseHost(char *string, char* hostname)
     return 0;
 }
 
-int parsePath(char* string, char** path){
+
+int parsePort(char* string, int &port){
+
+}
+
+int parsePath(char* string, char* path){
     
 }
 
+
+struct Address{
+        char* user;
+        char* password;
+        char* host;
+        int port;
+        char* path;
+    } ;
+
+parseFTPadress(char* string){
+    struct Adress adress;
+}
