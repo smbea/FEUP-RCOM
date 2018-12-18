@@ -5,7 +5,7 @@
 
 #define TRUE 1
 #define FALSE 0
-#define FTP_RESPONSE_SIZE 20
+#define FTP_RESPONSE_SIZE 1024
 #define FTP_FILE_RESPONSE_SIZE 1024
 
 /* Aplication specifications */

@@ -14,7 +14,7 @@
 // ftp.secyt.gov.ar (welcome message response is multiline)
 // speedtest.tele2.net (anonymous ftp, several files, however parent directory...)
 // ftp://test.rebex.net/ (has directories and is not anonymous. user: demo. password: password)
-
+// ftp://mirrors.up.pt/
 /**
  * @brief Gets the IP address in network byte order and IPV4 in standard dot notation
  * The Ftp fields host_ipv4_address anf host_network_byte_order are updated accordingly
@@ -56,10 +56,17 @@ static int setIPFromHostName(Ftp *ftp){
 }
 
 int main() {
-	Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
+	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
+	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "", "KeyGenerator.png");
+	Ftp *ftp = ftp_init("ftp.up.pt", NULL, NULL, "pub/ubuntu/", "ls-lR.gz");
+
 	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
 	
 	int sockfd = ftp_connectToServer(ftp), sockfd_data;
+
+	if(sockfd < 0) {
+		exit(-1);
+	}
 	
 	ftp_authenticateUser(ftp, sockfd) ;
 	
@@ -175,8 +182,8 @@ int ftp_connectToServer(const Ftp *ftp) {
 int16_t ftp_getResponse(int sockfd, char *response) {
 	bool reachedTelnetEOF = FALSE; // flag that tells if we reached the telnet EOF, setting the end of the response
 	bool isMultiLineResponse = FALSE; // flag that tells if response is multiline
-	char buf[FTP_RESPONSE_SIZE]; // buffer to hold response text
-	char responseCode[3]; // buffer to hold response code
+	char buf[FTP_RESPONSE_SIZE] = {0}; // buffer to hold response text
+	char responseCode[4] = {0}; // buffer to hold response code
 	size_t responseSize = 0;
 	// read the first 3 bytes, which are the response code
 	read(sockfd, &responseCode, 3);
@@ -192,7 +199,7 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 	while(!reachedTelnetEOF) {
 		// read up to FTP_RESPONSE_SIZE bytes
 		ssize_t read_bytes = read(sockfd, &buf, FTP_RESPONSE_SIZE);
-
+		printf("%s\n", buf);
 		// check if we reached end-of-telnet <CRLF>
 		if(isMultiLineResponse) {
 			/* For multiline responses we reach the end of the response when we find the response code
@@ -276,8 +283,13 @@ int ftp_sendPasswordCommand(const Ftp *ftp, int sockfd) {
 }
 
 int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
-	ftp_sendUserCommand(ftp, sockfd);
-	ftp_sendPasswordCommand(ftp, sockfd);
+	printf("username: %s\t password: %s", ftp->user, ftp->password);
+	int ret;
+	if((ret = ftp_sendUserCommand(ftp, sockfd)) == 0)
+		return 0;
+	else if(ret == 1)
+		return ftp_sendPasswordCommand(ftp, sockfd);
+	else return -1;
 }
 
 
@@ -292,6 +304,7 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd) {
 static int parsePassiveCommandResponse(char *response, char ipv4_address[16], uint16_t *port) {
 	// Entering Passive Mode (90,130,70,73,106,78).
 	char *index = strchr(response, '(') + 1; // already pointing for IP MSB
+	printf("passive mode: %s\n", response);
 	uint8_t ip1, ip2, ip3, ip4, port1, port2;
 	sscanf(index, "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu", &ip1, &ip2, &ip3, &ip4, &port1, &port2);
 	sprintf(ipv4_address, "%d.%d.%d.%d", ip1, ip2, ip3, ip4);
