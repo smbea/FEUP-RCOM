@@ -137,15 +137,17 @@ int parsePort(char* string, char* port){
     return 0;
 }
 /*!*/
-int parsePath(char* string, char* path){
+int parsePath(char* string, char* path, char* filename){
 
     size_t length = strlen(string);
     unsigned int index = 0;
+	int lastSlash = 0;
     char pathString[length];
 
     while((*string) != '\0')
     {
         pathString[index] = *((char*)(string));
+		if((*string) == '/') lastSlash = index;
         string++;
         index++;
         if (index > length)
@@ -153,7 +155,9 @@ int parsePath(char* string, char* path){
     }
     
     pathString[index] = '\0';
-    memcpy(path, pathString, (index+1));
+	memcpy(filename, pathString + lastSlash, length - lastSlash + 1);
+    memcpy(path, pathString, index - strlen(filename));
+	path[index - strlen(filename)] = '\0';
     return 0;
 }
 
@@ -177,8 +181,8 @@ int parseFTPaddress(char* addressString, struct Address* address){
     switch(ret)
     {
         case 1:
-            memcpy(address->user, alpha, strlen(alpha));
-            memcpy(address->password, beta, strlen(beta));
+            memcpy(address->user, alpha, strlen(alpha)+1);
+            memcpy(address->password, beta, strlen(beta)+1);
             if((*beta) != '0')
                 addressString += strlen(alpha) + strlen(beta) + 2;
             else
@@ -188,8 +192,8 @@ int parseFTPaddress(char* addressString, struct Address* address){
         case 3:
             memcpy(address->user, "null", 5);
             memcpy(address->password, "null", 5);
-            memcpy(address->host, alpha, strlen(alpha));
-            memcpy(address->port, beta, strlen(beta));
+            memcpy(address->host, alpha, strlen(alpha)+1);
+            memcpy(address->port, beta, strlen(beta)+1);
             flag = 0;
            if(ret == 2)
                 addressString += strlen(alpha) + strlen(beta) + 2;
@@ -208,8 +212,8 @@ int parseFTPaddress(char* addressString, struct Address* address){
         if(ret != 2 && ret != 3)
             return -1;
         else{
-            memcpy(address->host, alpha2, strlen(alpha2));
-            memcpy(address->port, beta2, strlen(beta2));
+            memcpy(address->host, alpha2, strlen(alpha2)+1);
+            memcpy(address->port, beta2, strlen(beta2)+1);
             if(ret == 2)
                 addressString += strlen(alpha2) + strlen(beta2) + 2;
             else
@@ -218,7 +222,7 @@ int parseFTPaddress(char* addressString, struct Address* address){
         }
     }
     
-    parsePath(addressString, address->path);
+    parsePath(addressString, address->path, address->filename);
 
     return 0;
 
@@ -233,14 +237,6 @@ void printAddress(struct Address address){
     printf("host: %s\n", address.host);
     printf("port: %s\n", address.port);
     printf("path: %s\n", address.path);
+	printf("filename: %s\n", address.filename);
 
-}
-
-
-
-int main(void){
-    struct Address address;
-    parseFTPaddress("ftp://afonso@google.com/folder1/folder2/image.png", &address);
-    printAddress(address);
-    return 0;
 }

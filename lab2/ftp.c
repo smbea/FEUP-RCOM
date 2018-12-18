@@ -55,25 +55,6 @@ static int setIPFromHostName(Ftp *ftp){
 	return 0;
 }
 
-int main() {
-	Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
-	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
-	
-	int sockfd = ftp_connectToServer(ftp), sockfd_data;
-	
-	ftp_authenticateUser(ftp, sockfd) ;
-	
-	ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data);
-	ftp_changeDirectoryCommand(ftp, sockfd);
-	ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data);
-	
-	//ftp_getResponse(sockfd);
-	close(sockfd);
-
-	free(ftp);
-	return 0;
-}
-
 Ftp* ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename) {
 	Ftp *ftp = calloc(1,sizeof(Ftp));
 	if(ftp == NULL)
@@ -199,7 +180,8 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 			 *  i.e. the specification says the last telnet line starts with the response code
 			 * Thus, we search for the code on the buffer. if we found it, then we are reading the last telnet line, *  which ends once we reach the end-of-telnet <CRLF>
 			 */
-			for(int i = 0; i < read_bytes-3; i++)
+			int i;
+			for(i = 0; i < read_bytes-3; i++)
 				if(memcmp(responseCode, buf+i, 3) == 0)
 					isMultiLineResponse = FALSE; // small trick to reuse the code below. In fact, the remaning response is no longer multiline
 		} else {
@@ -331,7 +313,7 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	char buf[FTP_FILE_RESPONSE_SIZE];
 	ssize_t read_bytes;
 	while((read_bytes = read(sockfd_data, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
-		printf("print packet\n");
+
 		fwrite(buf, read_bytes, 1, file);
 	}
 
