@@ -145,11 +145,12 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data);
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data);
 
 /**
- * @brief 
+ * @brief Changes the FTP current directory
  * 
- * @param ftp 
- * @param sockfd 
- * @return int 
+ * @param ftp The ftp connection
+ * @param sockfd The file descriptor for the open socket with server for the command channel
+ * @retval 0 Successfully changed current directory
+ * @retval -1 Failed to change current directory
  */
 int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd);
 

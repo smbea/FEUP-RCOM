@@ -56,28 +56,32 @@ static int setIPFromHostName(Ftp *ftp){
 }
 
 int main() {
-	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
+	Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
 	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "", "KeyGenerator.png");
-	Ftp *ftp = ftp_init("ftp.up.pt", NULL, NULL, "pub/ubuntu/<ssdfsd", "ls-lRsjbdsdudb.gz");
+	//Ftp *ftp = ftp_init("ftp.up.pt", "lol", "ok", "pub/ubuntu/", "ls-lRsjbdsdudb.gz");
 
 	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
 	
 	int sockfd = ftp_connectToServer(ftp), sockfd_data;
 
 	if(sockfd < 0)
-		exit(-1);
+		exit(1);
 	printf("\n################# AUTH #################\n");
 	if(ftp_authenticateUser(ftp, sockfd))
-		exit(-2);
+		exit(2);
 	printf("\n################# CHANGING TO PASSIVE MODE #################\n");
-	ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data);
+	if(ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data))
+		exit(3);
 	printf("\n################# CHANGING DIRECTORY #################\n");
-	ftp_changeDirectoryCommand(ftp, sockfd);
+	if(ftp_changeDirectoryCommand(ftp, sockfd))
+		exit(4);
 	printf("\n################# DOWNLOADING FILE #################\n");
-	ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data);
+	if(ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data))
+		exit(5);
 	
-	//ftp_getResponse(sockfd);
+
 	close(sockfd);
+	close(sockfd_data);
 
 	free(ftp);
 	return 0;
@@ -355,6 +359,9 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	int responseCode = ftp_sendCommand(sockfd, "RETR", ftp->fileName, responseText);
 	
 	switch (responseCode) {
+		case 125:
+			printf("[INFO] Data connection is already open\n");
+			break;
 		case 150:
 			printf("[INFO] Data connection is open\n");
 			break;
@@ -382,9 +389,8 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 
 	// read final server response
 	responseCode = ftp_sendCommand(sockfd, "RETR", ftp->fileName, responseText);
-	switch (responseCode)
-	{
-		case 226:
+	switch (responseCode) {
+		case 226: case 250:
 			printf("[SUCCESS] File downloaded with success\n");
 			return 0;
 		default:
@@ -402,5 +408,6 @@ int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd) {
 			return 0;
 		default:
 			printf("[ERROR] Failed to change to directory %s\n", ftp->path);
+			return -1;
 	}
 }
