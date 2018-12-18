@@ -131,8 +131,26 @@ int ftp_authenticateUser(const Ftp *ftp, int sockfd);
  */
 int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data);
 
+/**
+ * @brief Retrieves file from FTP server
+ * 
+ * @param ftp The ftp connection
+ * @param sockfd The file descriptor for the open socket with server for the command channel
+ * @param sockfd_data The file descriptor for the open socket with server for the data channel
+ * @retval -1 Failed to create local file
+ * @retval -2 Server rejected retrieve command
+ * @retval -3 File download failed
+ * @retval 0 File downloaded successfully
+ */
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data);
 
+/**
+ * @brief 
+ * 
+ * @param ftp 
+ * @param sockfd 
+ * @return int 
+ */
 int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd);
 
 #endif

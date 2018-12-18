@@ -58,7 +58,7 @@ static int setIPFromHostName(Ftp *ftp){
 int main() {
 	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
 	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "", "KeyGenerator.png");
-	Ftp *ftp = ftp_init("ftp.up.pt", NULL, NULL, "pub/ubuntu/", "ls-lR.gz");
+	Ftp *ftp = ftp_init("ftp.up.pt", NULL, NULL, "pub/ubuntu/<ssdfsd", "ls-lRsjbdsdudb.gz");
 
 	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
 	
@@ -73,7 +73,7 @@ int main() {
 	ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data);
 	printf("\n################# CHANGING DIRECTORY #################\n");
 	ftp_changeDirectoryCommand(ftp, sockfd);
-	printf("\n################# RETRIVING FILE #################\n");
+	printf("\n################# DOWNLOADING FILE #################\n");
 	ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data);
 	
 	//ftp_getResponse(sockfd);
@@ -200,6 +200,7 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 	// read remaining response
 	while(!reachedTelnetEOF) {
 		// read up to FTP_RESPONSE_SIZE bytes
+		// TODO
 		ssize_t read_bytes = read(sockfd, &buf, FTP_RESPONSE_SIZE);
 		// check if we reached end-of-telnet <CRLF>
 		if(isMultiLineResponse) {
@@ -353,10 +354,21 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	file = fopen(ftp->fileName, "w");
 
 	if(file == NULL)
-		exit(-1);
+		return -1;
 	
 	// issue ftp command
-	ftp_sendCommand(sockfd, "RETR", ftp->fileName, NULL);
+	char responseText[FTP_RESPONSE_SIZE] = {0};
+	int responseCode = ftp_sendCommand(sockfd, "RETR", ftp->fileName, responseText);
+	
+	switch (responseCode) {
+		case 150:
+			printf("[INFO] Data connection is open\n");
+			break;
+		default:
+			printf("[ERROR] Status %d. %s\n", responseCode, responseText);
+			return -2;
+			break;
+	}
 
 	// listen to server response and write to file
 	char buf[FTP_FILE_RESPONSE_SIZE];
@@ -364,12 +376,20 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 	while((read_bytes = read(sockfd_data, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
 		fwrite(buf, read_bytes, 1, file);
 	}
-
-	printf("download ended\n");
-
+	
 	fclose(file);
 
-	return 0;
+	// read final server response
+	responseCode = ftp_sendCommand(sockfd, "RETR", ftp->fileName, responseText);
+	switch (responseCode)
+	{
+		case 226:
+			printf("[SUCCESS] File downloaded with success\n");
+			return 0;
+		default:
+			printf("[ERROR] Status %d. %s\n", responseCode, responseText);
+			return -3;
+	}
 }
 
 int ftp_changeDirectoryCommand(const Ftp *ftp, int sockfd) {
