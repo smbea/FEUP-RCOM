@@ -349,12 +349,6 @@ int ftp_sendPassiveCommand(const Ftp *ftp, int sockfd, int *sockfd_data) {
 }
 
 int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
-	// create file locally
-	FILE* file;
-	file = fopen(ftp->fileName, "w");
-
-	if(file == NULL)
-		return -1;
 	
 	// issue ftp command
 	char responseText[FTP_RESPONSE_SIZE] = {0};
@@ -370,13 +364,20 @@ int ftp_sendRetrieveCommand(const Ftp *ftp, int sockfd, int sockfd_data) {
 			break;
 	}
 
+	// create file locally
+	FILE* file;
+	file = fopen(ftp->fileName, "w");
+
+	if(file == NULL)
+		return -1;
+
 	// listen to server response and write to file
 	char buf[FTP_FILE_RESPONSE_SIZE];
 	ssize_t read_bytes;
 	while((read_bytes = read(sockfd_data, buf, FTP_FILE_RESPONSE_SIZE)) != 0) {
 		fwrite(buf, read_bytes, 1, file);
 	}
-	
+
 	fclose(file);
 
 	// read final server response
