@@ -45,7 +45,7 @@ int parseUserPassword(char* userPass, char* username, char* password)
     if((*userPass) == '/'){
         memcpy(username, user, userLength);
         memcpy(password, "21\0", 3);    
-        printf("No host provided!\n");
+        printf("No port provided!\n");
         return 3;
     }
  
@@ -164,8 +164,8 @@ int parsePath(char* string, char* path, char* filename){
 
 
 int parseFTPaddress(char* addressString, struct Address* address){
-    char alpha[25];
-    char beta[25];
+    char alpha[25] = {0};
+    char beta[25] = {0};
     char alpha2[25];
     char beta2[25];
     int flag = 1;
@@ -190,8 +190,8 @@ int parseFTPaddress(char* addressString, struct Address* address){
             break;
         case 2:
         case 3:
-            memcpy(address->user, "null", 5);
-            memcpy(address->password, "null", 5);
+            address->user[0] = '\0';
+            address->password[0] = '\0';
             memcpy(address->host, alpha, strlen(alpha)+1);
             memcpy(address->port, beta, strlen(beta)+1);
             flag = 0;
