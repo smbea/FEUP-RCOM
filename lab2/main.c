@@ -13,7 +13,11 @@ int main(int argc, char** argv) {
 	printAddress(address);
 
 	// Download file
-	Ftp *ftp = ftp_init(address.host, address.user, address.password, address.path, address.filename);
+	Ftp *ftp;
+	if(address.user[0] == '\0')
+		ftp = ftp_init(address.host, NULL, NULL, address.path, address.filename);
+	else 
+		ftp = ftp_init(address.host, address.user, address.password, address.path, address.filename);
 	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "", "KeyGenerator.png");
 	//Ftp *ftp = ftp_init("ftp.up.pt", "lol", "ok", "pub/ubuntu/", "ls-lRsjbdsdudb.gz");
 	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");

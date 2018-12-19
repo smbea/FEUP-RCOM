@@ -182,8 +182,12 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 			 */
 			int i;
 			for(i = 0; i < read_bytes-3; i++)
-				if(memcmp(responseCode, buf+i, 3) == 0)
-					isMultiLineResponse = FALSE; // small trick to reuse the code below. In fact, the remaning response is no longer multiline
+				if(memcmp(responseCode, buf+i, 3) == 0 && buf[i+3] == ' ') {
+					if(i > 1 && buf[i-2] == '\r' && buf[i-1] == '\n') {
+						reachedTelnetEOF = TRUE;
+						isMultiLineResponse = FALSE; // small trick to reuse the code below. In fact, the remaning response is no longer multiline
+					}
+				}
 		} else {
 			/* 
 			 * For single line responses, we reach the end of response when

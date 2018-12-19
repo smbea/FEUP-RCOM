@@ -155,7 +155,7 @@ int parsePath(char* string, char* path, char* filename){
     }
     
     pathString[index] = '\0';
-	memcpy(filename, pathString + lastSlash, length - lastSlash + 1);
+	memcpy(filename, pathString + lastSlash + 1, length - lastSlash + 1);
     memcpy(path, pathString, index - strlen(filename));
 	path[index - strlen(filename)] = '\0';
     return 0;
