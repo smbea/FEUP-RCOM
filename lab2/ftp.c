@@ -55,38 +55,6 @@ static int setIPFromHostName(Ftp *ftp){
 	return 0;
 }
 
-int main() {
-	Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "pub/example/", "KeyGenerator.png");
-	//Ftp *ftp = ftp_init("test.rebex.net", "demo", "password", "", "KeyGenerator.png");
-	//Ftp *ftp = ftp_init("ftp.up.pt", "lol", "ok", "pub/ubuntu/", "ls-lRsjbdsdudb.gz");
-
-	//Ftp ftp = ftp_init("speedtest.tele2.net", NULL, NULL, NULL, "512KB.zip");
-	
-	int sockfd = ftp_connectToServer(ftp), sockfd_data;
-
-	if(sockfd < 0)
-		exit(1);
-	printf("\n################# AUTH #################\n");
-	if(ftp_authenticateUser(ftp, sockfd))
-		exit(2);
-	printf("\n################# CHANGING TO PASSIVE MODE #################\n");
-	if(ftp_sendPassiveCommand(ftp, sockfd, &sockfd_data))
-		exit(3);
-	printf("\n################# CHANGING DIRECTORY #################\n");
-	if(ftp_changeDirectoryCommand(ftp, sockfd))
-		exit(4);
-	printf("\n################# DOWNLOADING FILE #################\n");
-	if(ftp_sendRetrieveCommand(ftp, sockfd, sockfd_data))
-		exit(5);
-	
-
-	close(sockfd);
-	close(sockfd_data);
-
-	free(ftp);
-	return 0;
-}
-
 Ftp* ftp_init(uint8_t *host, uint8_t* username, uint8_t* password, uint8_t *path, uint8_t* filename) {
 	Ftp *ftp = calloc(1,sizeof(Ftp));
 	if(ftp == NULL)
@@ -212,7 +180,8 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 			 *  i.e. the specification says the last telnet line starts with the response code
 			 * Thus, we search for the code on the buffer. if we found it, then we are reading the last telnet line, *  which ends once we reach the end-of-telnet <CRLF>
 			 */
-			for(int i = 0; i < read_bytes-3; i++)
+			int i;
+			for(i = 0; i < read_bytes-3; i++)
 				if(memcmp(responseCode, buf+i, 3) == 0)
 					isMultiLineResponse = FALSE; // small trick to reuse the code below. In fact, the remaning response is no longer multiline
 		} else {
