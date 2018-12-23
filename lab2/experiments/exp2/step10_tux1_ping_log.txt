@@ -1,0 +1,5 @@
+PING 172.16.51.255 (172.16.51.255) 56(84) bytes of data.
+
+--- 172.16.51.255 ping statistics ---
+9 packets transmitted, 0 received, 100% packet loss, time 7999ms
+
