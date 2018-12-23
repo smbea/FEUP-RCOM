@@ -20,3 +20,10 @@ ifconfig eth0 172.16.50.254/24
 
 ## Questions
 
+1. What are the ARP packets and what are they used for?
+
+ARP (Address Resolution Protocol) packets ...
+
+2.  
+
+3. What packets does the ping command generate?
