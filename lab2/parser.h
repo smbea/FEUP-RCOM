@@ -11,13 +11,13 @@
 
 
 struct Address{
-        char user[50];
-        char password[50];
-        char host[50];
-        char port[50];
-        char path[50];
-		char filename[50];
-    }Address;
+    char user[256];
+    char password[256];
+    char host[256];
+    char port[5];
+    char path[1024];
+    char filename[256];
+} Address;
 
 
 int parseFTPBegin(char *string);

@@ -24,7 +24,7 @@ typedef struct {
 	char hostname[HOST_MAX_LEN]; // the ftp server hostname
 	char host_network_byte_order[5]; // holds the server address in network byte order (4 bytes)
 	char host_ipv4_address[16]; // the server address in ipv4 dotted format (maximum 15 chars)
-	uint16_t port; // todo
+	uint16_t port;
 
 	// user
 	char user[USERNAME_MAX_LEN];

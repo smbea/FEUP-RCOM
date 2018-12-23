@@ -129,7 +129,7 @@ int ftp_connectToServer(const Ftp *ftp) {
 	int	sockfd = createSocket(ftp->host_ipv4_address, ftp->port);
 	if(sockfd < 0)
 		return -1;
-	printf("sdnashuiasdnhjklas\n");
+
 	/* Wait for server response */
 	uint16_t response = ftp_getResponse(sockfd, NULL);
 	if(response == 220) {
@@ -174,8 +174,6 @@ int16_t ftp_getResponse(int sockfd, char *response) {
 		// read up to FTP_RESPONSE_SIZE bytes
 		// TODO
 		ssize_t read_bytes = read(sockfd, buf, FTP_RESPONSE_SIZE);
-		if(read_bytes){  printf("==========read=========\n%s", buf); }
-		else printf("nothing to read\n");
 		// check if we reached end-of-telnet <CRLF>
 		if(isMultiLineResponse) {
 			/* For multiline responses we reach the end of the response when we find the response code
